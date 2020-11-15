@@ -6,27 +6,27 @@
  # The SCDE Default Librarys
  
   # the Core
-  add_subdirectory(lib/core)
+  add_subdirectory(scde_core/core)
   
   # the embedded Commands
-  add_subdirectory(lib/commands/Attr_Command)
-  add_subdirectory(lib/commands/Define_Command)
-  add_subdirectory(lib/commands/Delete_Command)
-  add_subdirectory(lib/commands/Deleteattr_Command)
-  add_subdirectory(lib/commands/Get_Command)
-  add_subdirectory(lib/commands/Help_Command)
-  add_subdirectory(lib/commands/Include_Command)
-  add_subdirectory(lib/commands/IOWrite_Command)
-  add_subdirectory(lib/commands/List_Command)
-  add_subdirectory(lib/commands/Rename_Command)
-  add_subdirectory(lib/commands/Rereadcfg_Command)
-  add_subdirectory(lib/commands/Save_Command)
-  add_subdirectory(lib/commands/Set_Command)
-  add_subdirectory(lib/commands/Setstate_Command)
-  add_subdirectory(lib/commands/Shutdown_Command)
+  add_subdirectory(scde_core/commands/Attr_Command)
+  add_subdirectory(scde_core/commands/Define_Command)
+  add_subdirectory(scde_core/commands/Delete_Command)
+  add_subdirectory(scde_core/commands/Deleteattr_Command)
+  add_subdirectory(scde_core/commands/Get_Command)
+  add_subdirectory(scde_core/commands/Help_Command)
+  add_subdirectory(scde_core/commands/Include_Command)
+  add_subdirectory(scde_core/commands/IOWrite_Command)
+  add_subdirectory(scde_core/commands/List_Command)
+  add_subdirectory(scde_core/commands/Rename_Command)
+  add_subdirectory(scde_core/commands/Rereadcfg_Command)
+  add_subdirectory(scde_core/commands/Save_Command)
+  add_subdirectory(scde_core/commands/Set_Command)
+  add_subdirectory(scde_core/commands/Setstate_Command)
+  add_subdirectory(scde_core/commands/Shutdown_Command)
   
   # the embedded Modules
-  add_subdirectory(lib/modules/Global_Module)    
+  add_subdirectory(scde_core/modules/Global_Module)    
 
  
 
