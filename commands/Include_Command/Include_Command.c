@@ -252,7 +252,12 @@ Include_CommandFn (const uint8_t *argsText
   // Open the configfile or statefile for reading
   char *fileName;
   asprintf(&fileName
-		,"/home/maikschulze/spiffs/%.*s.cfg"
+
+#if defined(ESP_PLATFORM)
+		,"/spiffs/%.*s.cfg"
+#else		
+				,"/home/maikschulze/LINUX/LINUX_Device/spiffs/%.*s.cfg"
+#endif		
 		,fileNameTextLen
 		,fileNameText);
 
