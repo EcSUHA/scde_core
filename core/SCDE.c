@@ -265,7 +265,7 @@ InitA()
 		// and fill with cmd-args
 		incSFIncludeCommandArgs->strTextLen =
 			asprintf((char**) &incSFIncludeCommandArgs->strText
-			,"include state");
+			,"include state.cfg");
   }
 
   // call command include to process the initial state-file
