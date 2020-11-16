@@ -35,13 +35,12 @@
 #include "Include_Command.h"
 
 
+// -------------------------------------------------------------------------------------------------
 
 // set default build verbose - if no external override
 #ifndef Include_Command_DBG  
 #define Include_Command_DBG  5	// 5 is default
 #endif
-
-
 
 // -------------------------------------------------------------------------------------------------
 
@@ -177,76 +176,6 @@ Include_CommandFn (const uint8_t *argsText
 
 // -------------------------------------------------------------------------------------------------
 
- /*
-  FILE *fp = fopen("/data/x", "w");
-
-  // return msg in case of an error
-  if (fp == NULL) {
-
-	// alloc mem for retMsg
-	strTextMultiple_t *retMsg =
-		 malloc(sizeof(strTextMultiple_t));
-
-	// response with error text
-	retMsg->strTextLen = asprintf(&retMsg->strText
-	,"should load: %.*s here!\r\n"
-	,fileNameTextLen
-	,fileNameText);
-
-  // insert retMsg in stail-queue
-  STAILQ_INSERT_TAIL(&headRetMsgMultiple, retMsg, entries);
-
-  // return STAILQ head, stores multiple retMsg, if NULL -> no retMsg-entries
-  return headRetMsgMultiple;
-
-  }
-
-*/
-
-
-/*
-  // !! correct to default LOG Fn!
-  printf("Including %.*s\n"
-	,fileNameTextLen
-	,fileNameText);
-*/
-
-
-  SCDEFn->Log3Fn(Include_ProvidedByCommand.commandNameText	//Common_Definition->name
-		,Include_ProvidedByCommand.commandNameTextLen  		//Common_Definition->nameLen
-		,1
-		,"Including %.*s.cfg\n"
-		,fileNameTextLen
-		,fileNameText);
-
-
-
-
-/*
-
-1222	  my @t = localtime();
-1223	  my $gcfg = ResolveDateWildcards(AttrVal("global", "configfile", ""), @t);
-1224	  my $stf  = ResolveDateWildcards(AttrVal("global", "statefile",  ""), @t);
-
-
-1225	  if(!$init_done && $arg ne $stf && $arg ne $gcfg) {
-1226	    my $nr =  $devcount++;
-1227	    $comments{$nr}{TEXT} = "include $arg";
-1228	    $comments{$nr}{CFGFN} = $currcfgfile		if($currcfgfile ne $gcfg);
-1229	  }
-*/
-
-
-
-
-
-
-
-
-
-
-
-
 
 
   // Open the configfile or statefile for reading
@@ -254,344 +183,26 @@ Include_CommandFn (const uint8_t *argsText
   asprintf(&fileName
 
 #if defined(ESP_PLATFORM)
-		,"/spiffs/%.*s.cfg"
+		,"/spiffs/%.*s"
 #else		
-				,"/home/maikschulze/LINUX/LINUX_Device/spiffs/%.*s.cfg"
+				,"/home/maikschulze/LINUX/LINUX_Device/spiffs/%.*s"
 #endif		
 		,fileNameTextLen
 		,fileNameText);
 
-  FILE *f;
-	
-	f = fopen(fileName, "r");
 
-	if ( f == NULL ) {
-		SCDEFn->Log3Fn(Include_ProvidedByCommand.commandNameText	//Common_Definition->name
-			,Include_ProvidedByCommand.commandNameTextLen			//Common_Definition->nameLen
-			,1
-			,"Failed to open file %.*s.cfg for reading!"
-			,fileNameTextLen
-			,fileNameText);
-	//	return; HOW TO EXIT ???????
-	}
 
-  free(fileName);
 
-  // our delimiters
-  char delimiter[] = "\r\n";
- 
-  // backup old configuration file, for reconstruction
-  strText_t oldCfgFile = SCDERoot->current_config_file;
 
-  // set temporary to filename from include arg
-  SCDERoot->current_config_file.strText = fileNameText;
-  SCDERoot->current_config_file.strTextLen = fileNameTextLen;
 
-  // clear, reset the global quit-flag
-  SCDERoot->global_control_register_a &= ~(F_RECEIVED_QUIT);
+  // file handle
+  FILE *fh;
+  
+  // open file
+  fh = fopen(fileName, "r");
 
-  // to build one complete command row, start empty
-  strTextMultiple_t rebuiltCmdRow;
-  rebuiltCmdRow.strText = NULL;
-
-  // our one line cache
-	char line [256+1];
-	
-	// get one file content line, till /n newline
-	while (fgets(line, sizeof(line), f)) {
-
-	  // partialCmdRow building (line may contain multiple commands) 
-	  strTextMultiple_t partialCmdRow;
-
-		// initialize strtok
-  	partialCmdRow.strText = strtok(line, delimiter);	
-		
-		// do till we have chars from line
-    while ( partialCmdRow.strText != NULL ) {
-			
-			// get length in this loop
-			partialCmdRow.strTextLen = (size_t) strlen(partialCmdRow.strText);
-			
-			// further processing only if we have chars
-		 	if (partialCmdRow.strTextLen > 0) {
-
-			 	// if starting with new command row (not continuing one) ...
-			 	if (rebuiltCmdRow.strText == NULL) {
-
-				 	// memory allocation for new command row
-				 	rebuiltCmdRow.strText = (char *) malloc(partialCmdRow.strTextLen);
-
-				 	// copy corrent row to allocated memory
-				 	memcpy(rebuiltCmdRow.strText
-				  	,partialCmdRow.strText
-					  ,partialCmdRow.strTextLen);
-
-					 // init length
-				 	rebuiltCmdRow.strTextLen = partialCmdRow.strTextLen;
-			  }
-
-			 	// continuing a command row with an part ...
-			 	else {
-
-				  // Reallocate memory to new size
-				  rebuiltCmdRow.strText = (char *) realloc(rebuiltCmdRow.strText
-				  	,rebuiltCmdRow.strTextLen + partialCmdRow.strTextLen);
-
-				 	// add command-part to allocated memory
-				  memcpy(rebuiltCmdRow.strText + rebuiltCmdRow.strTextLen
-					 	,partialCmdRow.strText
-				 	 	,partialCmdRow.strTextLen);
-
-					 // save new length
-			 	 	rebuiltCmdRow.strTextLen += partialCmdRow.strTextLen;
-		 		}
-
-		 	 	// not ending with //? -> execute its complete
-		 	 	if ( (rebuiltCmdRow.strTextLen < 2) ||
-				 	(memcmp(rebuiltCmdRow.strText + rebuiltCmdRow.strTextLen - 2, "//", 2)) ) {
-
-			 	 	printf("Rebuilt an CMD row from file '%.*s'\n"
-				  	,rebuiltCmdRow.strTextLen
-				   	,rebuiltCmdRow.strText);
-
-					// call the AnalyzeCommandChainFn, if retMsg != NULL -> got ret Msgs entries
-					struct headRetMsgMultiple_s headRetMsgMultipleFromFn =
-						SCDEFn->AnalyzeCommandChainFn((const uint8_t *) rebuiltCmdRow.strText,
-							rebuiltCmdRow.strTextLen);
-
-					// retMsgMultiple stailq filled from Fn ? -> get the entries till empty
-					while (!STAILQ_EMPTY(&headRetMsgMultipleFromFn)) {
-
-						// for the retMsg elements
-						strTextMultiple_t *retMsg =
-							STAILQ_FIRST(&headRetMsgMultipleFromFn);
-
-						printf("AddingRetMsg: %.*s\n"
-							,retMsg->strTextLen
-							,retMsg->strText);
-
-						// first remove this entry
-						STAILQ_REMOVE(&headRetMsgMultipleFromFn, retMsg, strTextMultiple_s, entries);
-
-						// then insert retMsg in stail-queue
-						STAILQ_INSERT_TAIL(&headRetMsgMultiple, retMsg, entries);
-					}
-
-					// release memory for next cycle
-					free(rebuiltCmdRow.strText);
-					rebuiltCmdRow.strText = NULL;
-
-					// break, if the global quit-flag is set
-					if (SCDERoot->global_control_register_a & F_RECEIVED_QUIT) break;
-				}
-
-				// ending with //? -> more to come
-				else {
-			
-					// sub 2 chars (//)
-					rebuiltCmdRow.strTextLen -= 2;
-				}
-			}
-
-			partialCmdRow.strText = strtok(NULL, delimiter);	
-		}
-  }
-
-  // there may be an incomplete processed multiline row in memory -> release it
-  if (rebuiltCmdRow.strText) free(rebuiltCmdRow.strText);
-
-  // rebuilt current cfg file
-  SCDERoot->current_config_file = oldCfgFile;
-
-  // close file
-  fclose(f);
-
-  // return STAILQ head, queue stores multiple retMsg entries, if NULL -> no retMsg-entry
-  return headRetMsgMultiple;
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/*
-
-	printf("Abschnitt gefunden: %s\n", ptr);
-
-	// call the AnalyzeCommandChainFn, if retMsg != NULL -> head of the ret Msgs
-	struct headRetMsgMultiple_s headRetMsgMultipleFromFn =
-		SCDEFn->AnalyzeCommandChainFn((uint8_t *) ptr, (size_t) strlen(ptr));
-
-	// retMsgMultiple stailq filled from Fn ? -> get the entries till empty
-	while (!STAILQ_EMPTY(&headRetMsgMultipleFromFn)) {
-
-		// for the retMsg elements
-		strTextMultiple_t *retMsg =
-			STAILQ_FIRST(&headRetMsgMultipleFromFn);
-
-		printf("AddingRetMsg: %.*s\n"
-			,retMsg->strTextLen
-			,retMsg->strText);
-
-		// first remove this entry
-		STAILQ_REMOVE(&headRetMsgMultipleFromFn, retMsg, strTextMultiple_s, entries);
-
-		// then insert retMsg in stail-queue
-		STAILQ_INSERT_TAIL(&headRetMsgMultiple, retMsg, entries);
-
-	}
-
-	// break, if the global quit-flag is set
-	if (SCDERoot->globalCtrlRegA & F_RECEIVED_QUIT) break;
-
-	// loop through the next lines
- 	ptr = strtok(NULL, delimiter);
-
-  }
-
-  // return STAILQ head, stores multiple retMsg, if NULL -> no retMsg-entries
-  return headRetMsgMultiple;
-
-}
-
-
-
-
-
-
-*/
-
-
-
-
-
-
- /*
- // for the retMsg elements
-  strTextMultiple_t *retMsg;
-
-  STAILQ_FOREACH(retMsg, &headRetMsgMultiple, entries) {
-
-		printf("added: %.*s\n"
-			,retMsg->strTextLen
-			,retMsg->strText);
-  }
-
-*/
-
-
-
-
-
-
-
-
-/*
-
-  // max row length
-  char buffer[256];
-  char *pbuff;
-  int value;
-
-  // parse file
-  while (1) {
-
-	// end of file reached?
-	if (!fgets(buffer, sizeof buffer, stdin)) break;
-
-	printf("Line contains");
-
-	pbuff = buffer;
-
-	// search for end of line
-	while (1) {
-
-	// found ?
-	if (*pbuff == '\n') break;
-
-	value = strtol(pbuff, &pbuff, 10);
-
-	printf(" %d", value);
-
-	}
-  }
-
-
-fprintf(fp, "Hello!");
-*/
-
-
-/*
-  uint8_t testcmd[] = "attr esp32ctrl hallo maik";
-  size_t testcmdlen = 25;
-
-  struct headRetMsgMultiple_s headRetMsgMultiplex;
-
-   // get the module ptr by name
-   headRetMsgMultiplex = SCDEFn->AnalyzeCommandChainFn(testcmd
-		   , testcmdlen);
-
-  if (!STAILQ_EMPTY(&headRetMsgMultiplex)) {
-
-	// get the multiple retMsg
-	strTextMultiple_t *retMsgx;
-
-	// Read2 (remove).
-	while (!STAILQ_EMPTY(&headRetMsgMultiplex)) {
-
-		retMsgx = STAILQ_FIRST(&headRetMsgMultiplex);
-
-		printf("Type-Name:%.*s, module* NOT loaded!\n"
-			,retMsgx->strTextLen
-			,retMsgx->strText);
-
-		STAILQ_REMOVE(&headRetMsgMultiplex, retMsgx, strTextMultiple_s, entries);
-
-		free(retMsgx->strText);
-
-		free(retMsgx);
-	}
-  }
-
-
-
-//----
+  // error msg handling, in case of probs
+  if (!fh) {
 
 	// alloc mem for retMsg
 	strTextMultiple_t *retMsg =
@@ -599,297 +210,224 @@ fprintf(fp, "Hello!");
 
 	// response with error text
 	retMsg->strTextLen = asprintf(&retMsg->strText
-	,"should load: %.*s here!\r\n"
+		,"Can't open file %.*s !"
+		,fileNameTextLen
+		,fileNameText);
+
+	// insert retMsg in stail-queue
+	STAILQ_INSERT_TAIL(&headRetMsgMultiple, retMsg, entries);
+	
+free(fileName);
+  
+	// return STAILQ head, stores multiple retMsg, if NULL -> no retMsg-entries
+	return headRetMsgMultiple;
+  }
+
+// -------------------------------------------------------------------------------------------------
+
+free(fileName);
+
+
+
+  SCDEFn->Log3Fn(Include_ProvidedByCommand.commandNameText
+	,Include_ProvidedByCommand.commandNameTextLen
+	,1
+	,"Including %.*s."
 	,fileNameTextLen
 	,fileNameText);
 
-  // insert retMsg in stail-queue
-  STAILQ_INSERT_TAIL(&headRetMsgMultiple, retMsg, entries);
+/* FHEM
+1363	  my @t = localtime(gettimeofday());
+1364	  my $gcfg = ResolveDateWildcards(AttrVal("global", "configfile", ""), @t);
+1365	  my $stf  = ResolveDateWildcards(AttrVal("global", "statefile",  ""), @t); //cfg + state file bereinigt bereitstellen
 
-//----
-
-
-  // return STAILQ head, stores multiple retMsg, if NULL -> no retMsg-entries
-  return headRetMsgMultiple;
+1366	  if(!$init_done && $arg ne $stf && $arg ne $gcfg) {		// init done nicht abgeschlossen? + cfg oder statefile?
+1367	    my $nr =  $devcount++;									// ???
+1368	    $comments{$nr}{TEXT} = "include $arg";					//
+1369	    $comments{$nr}{CFGFN} = $currcfgfile if($currcfgfile ne $gcfg);	// ???
+1370	  }
 */
  
-
-
-
-
-
-
-
-
-
-
-//https://www.freebsd.org/cgi/man.cgi?query=queue&sektion=3
-
-
-
-//https://github.com/stockrt/queue.h/blob/master/sample.c
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/*
-
-
-  // prepare STAILQ head for multiple RetMsg storage
-  struct headRetMsgMultiple_s headRetMsgMultiple;
-
-  // Initialize the queue
-  STAILQ_INIT(&headRetMsgMultiple);
-
-
-
-
-
-
-
-
-
-
-   FILE *fp;
-   char str[60];
-
-   // opening file for reading 
-   fp = fopen("file.txt" , "r");
-
-   if(fp == NULL) {
-      perror("Error opening file");
-      return(-1);
-
-   }
-
-   if( fgets (str, 60, fp) != NULL ) {
-      // writing content to stdout 
-      puts(str);
-   }
-
-   fclose(fp);
-
-
-
-
-
-
-char line[256];
-char com[3];
-
-char separators[] = " ";
-fgets(line, sizeof(line), fp);
-
-//add or copy
-strncpy(&com, p, sizeof(com));    // copy the command string in com
-
-
-
-
-
-
-
-  char input[1024];  /buffer
-  char *string[256]; /onerow           // 1) 3 is dangerously small,256 can hold a while;-) 
-
-                                // You may want to dynamically allocate the pointers
-                                // in a general, robust case. 
-  char delimit[]=" \t\r\n\v\f"; // 2) POSIX whitespace characters
-  int i = 0, j = 0;
-
-  if (fgets(input, sizeof input, stdin)) // 3) fgets() returns NULL on error.
-                                        // 4) Better practice to use sizeof 
-                                        //    input rather hard-coding size 
-  {                                        
-    string[i]=strtok(input,delimit);    // 5) Make use of i to be explicit 
-    while(string[i]!=NULL)                    
-    {
-      printf("string [%d]=%s\n",i,string[i]);
-      i++;
-      string[i]=strtok(NULL,delimit);
-    }
-
-    for (j=0;j<i;j++)
-    printf("%s", string[i]);
-  }
-
-  return 0;
-  }
-
-
-
-
-
-
-
-  char string[] = "Kurt,Kanns;555678;DE";
-  char delimiter[] = "\r\n";
-  char *ptr;
-
-  // clear, reset global rcvdquit-flag
-  clear rcvdquit-flag here
-
-  // initialize strtok, start with first line
-  ptr = strtok(string, delimiter);
-
-  while(ptr != NULL) {
-
-	printf("Abschnitt gefunden: %s\n", ptr);
-
-
-
-
-	// call the AnalyzeCommandChainFn, if retMsg != NULL -> head of the ret Msgs
-	struct headRetMsgMultiple_s headRetMsgMultipleFromFn
-		AnalyzeCommandChain(ptr, strlen(ptr));
-
-	// retMsgMultiple stailq from Fn filled ?
-	if (!STAILQ_EMPTY(&headRetMsgMultipleFromFn)) {
-
-		// for the retMsg elements
-		strTextMultiple_t *retMsg;
-
-		// get the entries till empty
+  // backup old configuration file, for reconstruction
+  strText_t oldCfgFile = SCDERoot->current_config_file;
+
+  // set temporary to filename from include arg
+  SCDERoot->current_config_file.strText = fileNameText;			// besser machen!!!!
+  SCDERoot->current_config_file.strTextLen = fileNameTextLen;
+
+  // holds the complete rebuilt line/multiline cmd row when reconstructed
+  String_t completeCmdRow;
+  
+  // holds the processed line number
+  int lineNo = 0;
+
+  // clear, reset the global quit-flag
+  SCDERoot->global_control_register_a &= ~(F_RECEIVED_QUIT);
+
+  // our one line cache
+  char line [256+1];				//Makro!
+
+  // we need to start empty
+  completeCmdRow.p_char = NULL;
+    
+  // get file content (cmd text) row by row (splitted /n newline)
+  while (fgets(line, sizeof(line), fh)) {
+
+	lineNo++;
+
+  	// ?
+  	String_t partialCmdRow;
+
+// ---
+
+	// input: a line of cmd-text (zero terminated string)
+  	// goals: 1. in case of content, add it to complete cmd-row
+  	//        2. remove '\r' and/or '\n' from partialCmdRows
+  	//        3. check for /^(.*)\\ *$/ -> indicates partial cmd-row,
+  	//               more to come for completeCmdRow 
+  	
+  	char *p_src, *p_dst, *p_seek;
+
+  	p_seek = p_src = p_dst = line;
+
+	// no cmd-text - keep complete cmd-row empty
+  	if (*p_src != '\0') do {
+	
+		// move processed character
+		*p_dst = *p_src;
+		
+		// check this and upcoming characters for /^(.*)\\ *$/
+		//  -> indicates partial cmd row to process
+		p_seek = p_src;
+		
+		if (*p_seek++ == '\\') {
+
+			if (*p_seek++ == '\\') {
+		
+				while ( (*p_seek == ' ') 
+					 || (*p_seek == '\r')
+					 || (*p_seek == '\n') ) p_seek++;
+			
+				if (*p_seek == '\0') {
+			
+					// indicate -> a partial cmd row should be processed
+					p_seek = NULL;	
+				}
+		 	}
+		}
+	 
+		// -> partial cmd row was processed? or '\0' in src is next ?
+		if (p_seek == NULL || *++p_src == '\0') {
+	
+			// zero terminate to use strlen (for *p_src != '\0')
+			*p_dst = '\0';
+  
+  			// get length in this loop
+  			partialCmdRow.len = (size_t) strlen(line);
+  			partialCmdRow.p_char = line;
+			
+  			// further processing only if we have text
+  			if (partialCmdRow.len > 0) {
+
+  				// if starting with new command row (not continuing one) ...
+  				if (completeCmdRow.p_char == NULL) {
+
+  					// memory allocation for new command row
+  					completeCmdRow.p_char = (char *) malloc(partialCmdRow.len);
+
+  					// copy corrent row to allocated memory
+					memcpy(completeCmdRow.p_char
+						,partialCmdRow.p_char
+						,partialCmdRow.len);
+
+					// init length
+					completeCmdRow.len = partialCmdRow.len;
+  				}
+
+  				// continuing a command row with an part ...
+ 				 else {
+
+					// reallocate memory to new size
+					completeCmdRow.p_char = (char *) realloc(completeCmdRow.p_char
+						,completeCmdRow.len + partialCmdRow.len);
+
+					// add command-part to allocated memory
+					memcpy(completeCmdRow.p_char + completeCmdRow.len
+						,partialCmdRow.p_char
+						,partialCmdRow.len);
+
+					// save new length
+					completeCmdRow.len += partialCmdRow.len;
+  				}
+  			}
+ 		
+ 			// cmd row is complete
+			break;
+		} 
+	 
+		// continue filtering '\r' || '\n'
+		if (*p_dst != ('\r' || '\n') ) p_dst++;
+	
+  	} while (1);
+  
+  	// continue when an initial part of an multi-row-cmd was parsed - indicated by p_seek == NULL
+    if (p_seek == NULL) continue;
+  
+	// if we have an parseable cmd-row now, parse it ...
+	if (completeCmdRow.p_char) {
+    
+		// call the AnalyzeCommandChainFn, if retMsg != NULL -> got ret Msgs entries		//warum multiple???
+		struct headRetMsgMultiple_s headRetMsgMultipleFromFn =
+			SCDEFn->AnalyzeCommandChainFn((const uint8_t *) completeCmdRow.p_char,
+				completeCmdRow.len);
+
+		// retMsgMultiple stailq filled from Fn ? -> get the entries till empty
 		while (!STAILQ_EMPTY(&headRetMsgMultipleFromFn)) {
 
-			retMsg = STAILQ_FIRST(&headRetMsgMultipleFromFn);
+			// for the retMsg elements
+			strTextMultiple_t *retMsg =
+				STAILQ_FIRST(&headRetMsgMultipleFromFn);
 
-			// insert retMsg in stail-queue
-			STAILQ_INSERT_TAIL(&headRetMsgMultiple, retMsg, entries);
+			SCDEFn->Log3Fn(Include_ProvidedByCommand.commandNameText
+				,Include_ProvidedByCommand.commandNameTextLen
+				,5
+				,"%.*s line %d returned >%.*s<"
+				,argsTextLen
+				,argsText
+				,lineNo
+				,retMsg->strTextLen
+				,retMsg->strText);	
 
-			// done, remove this entry
+			// first remove this entry
 			STAILQ_REMOVE(&headRetMsgMultipleFromFn, retMsg, strTextMultiple_s, entries);
+
+			// then insert retMsg in stail-queue
+			STAILQ_INSERT_TAIL(&headRetMsgMultiple, retMsg, entries);
 		}
+
+   		// we have an complete cmd-row here
+  		free(completeCmdRow.p_char);
+		completeCmdRow.p_char = NULL;
 	}
-
-	// break if global rcvdquit-flag is set
-	if (rcvdquit-flag) break;
-
-	// loop through the next lines
- 	ptr = strtok(NULL, delimiter);
-
+  
+	// break cmd read loop, if the global quit-flag is set
+	if (SCDERoot->global_control_register_a & F_RECEIVED_QUIT) break;
+  
+  // continue next row
   }
 
-  // return STAILQ head, it stores multiple RetMsg, if NULL -> no RetMsg-entries
+  // there is a chance that we have an incomplete cmd-row here - free the mem
+  if (completeCmdRow.p_char) free(completeCmdRow.p_char);
+
+  // rebuilt current cfg file
+  SCDERoot->current_config_file = oldCfgFile;
+
+  // close file
+  fclose(fh);
+
+  // return STAILQ head, queue stores multiple retMsg entries, if NULL -> no retMsg-entry
   return headRetMsgMultiple;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-seek through file, split lines by '\r\n'
-identify multiline commands and add them 
-call AnalyzeCommandChain with the identified line
-push answer(if any) to multiple msg
-loop through lines, break if rcvdquit-flag is set
-
-1209	#####################################
-1210	sub
-1211	CommandInclude($$)
-1212	{
-1213	  my ($cl, $arg) = @_;			// arg = filename 
-1214	  my $fh;
-1215	  my @ret;
-1216	  my $oldcfgfile;
-1217	
-1218	  if(!open($fh, $arg)) {		// arg = filename ��en + fehlermeldung + abrechen
-1219	    return "Can't open $arg: $!";
-1220	  }
-
-
-1221	  Log 1, "Including $arg";
-
-
-
-1222	  my @t = localtime();
-1223	  my $gcfg = ResolveDateWildcards(AttrVal("global", "configfile", ""), @t);
-1224	  my $stf  = ResolveDateWildcards(AttrVal("global", "statefile",  ""), @t);
-
-
-1225	  if(!$init_done && $arg ne $stf && $arg ne $gcfg) {
-1226	    my $nr =  $devcount++;
-1227	    $comments{$nr}{TEXT} = "include $arg";
-1228	    $comments{$nr}{CFGFN} = $currcfgfile		if($currcfgfile ne $gcfg);
-1229	  }
-
-
-
-1230	  $oldcfgfile  = $currcfgfile;
-1231	  $currcfgfile = $arg;
-1232	
-
-1233	  my $bigcmd = "";
-1234	  $rcvdquit = 0;
-1235	  while(my $l = <$fh>) {
-
-		// search for linereturn
-1236	  	$l =~ s/[\r\n]//g;
-1237
-		// add multiline commands	
-1238	        if ($l =~ m/^(.*)\\ *$/) {       # Multiline commands
-1239	      		$bigcmd .= "$1\n";
-1240	        }
-
-		else {
-1241	      		my $tret = AnalyzeCommandChain($cl, $bigcmd . $l);
-1242	     		push @ret, $tret if(defined($tret));
-1243	      		$bigcmd = "";
-1244	        }
-
-1245	    last if($rcvdquit);
-1246	
-1247	  }
-
-
-1248	  $currcfgfile = $oldcfgfile;
-1249	  close($fh);
-1250	  return join("\n", @ret) if(@ret);
-1251	  return undef;
-1252	}
-
-
-*/
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+}
 
 
 
