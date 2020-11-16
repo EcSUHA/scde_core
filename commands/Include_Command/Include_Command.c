@@ -324,7 +324,7 @@ free(fileName);
   
   			// get length in this loop
   			partialCmdRow.len = (size_t) strlen(line);
-  			partialCmdRow.p_char = line;
+  			partialCmdRow.p_char = (uint8_t *) line;
 			
   			// further processing only if we have text
   			if (partialCmdRow.len > 0) {
@@ -333,7 +333,7 @@ free(fileName);
   				if (completeCmdRow.p_char == NULL) {
 
   					// memory allocation for new command row
-  					completeCmdRow.p_char = (char *) malloc(partialCmdRow.len);
+  					completeCmdRow.p_char = (uint8_t *) malloc(partialCmdRow.len);
 
   					// copy corrent row to allocated memory
 					memcpy(completeCmdRow.p_char
@@ -348,7 +348,7 @@ free(fileName);
  				 else {
 
 					// reallocate memory to new size
-					completeCmdRow.p_char = (char *) realloc(completeCmdRow.p_char
+					completeCmdRow.p_char = (uint8_t *) realloc(completeCmdRow.p_char
 						,completeCmdRow.len + partialCmdRow.len);
 
 					// add command-part to allocated memory
