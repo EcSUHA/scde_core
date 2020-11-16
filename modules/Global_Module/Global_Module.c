@@ -200,7 +200,7 @@ Global_Define(Common_Definition_t *Common_Definition)//, const char *Definition)
   // for response msg from AnalyzeCommand
   struct headRetMsgMultiple_s headRetMsgMultiple;
 
-  headRetMsgMultiple = SCDEFn_at_Global_M->AnalyzeCommandFn((const uint8_t *) "attr global configfile maker", 28);
+  headRetMsgMultiple = SCDEFn_at_Global_M->AnalyzeCommandFn((const uint8_t *) "attr global configfile maker.cfg", 32);
 
  // retMsgMultiple stailq filled ?
   if (!STAILQ_EMPTY(&headRetMsgMultiple)) {
@@ -236,7 +236,7 @@ Global_Define(Common_Definition_t *Common_Definition)//, const char *Definition)
 
 
 
-//  SCDEFn_at_Global_M->AnalyzeCommandFn((const uint8_t *) "attr global statefile state", 27);
+//  SCDEFn_at_Global_M->AnalyzeCommandFn((const uint8_t *) "attr global statefile state.cfg", 31);
 //  SCDEFn_at_Global_M->AnalyzeCommandFn((const uint8_t *) "attr global port 1234", 21);
                                                        //|12
 // -------------------------------------------------------------------------------------------
