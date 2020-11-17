@@ -118,6 +118,41 @@ Setstate_InitializeCommandFn(SCDERoot_t* SCDERootptr)
 
 
 
+
+
+
+// conversion to V2
+struct headRetMsgMultiple_s
+Setstate_CommandFn (const uint8_t* p_args
+		,const size_t args_len)
+{
+  // temporary conversion to make ready -> const String_t args
+  String_t args;
+  args.p_char = p_args;
+  args.len = args_len;
+
+
+// temporary conversion to make ready ->  head_ret_msg
+  struct Head_String_s head_ret_msg
+  	 = Setstate_Command2Fn(args);
+
+
+  struct headRetMsgMultiple_s x;
+  STAILQ_INIT(&x);
+  x.stqh_first =  head_ret_msg.stqh_first;
+  x.stqh_last =  head_ret_msg.stqh_last;
+  return x; 
+}
+
+
+
+
+
+
+
+
+
+
 /* -------------------------------------------------------------------------------------------------
  *  FName: Setstate_CommandFn
  *  Desc: Sets the state of an reading
@@ -138,84 +173,77 @@ Wenn via setstate der Definitionsstatus gesetzt wird, wird die X_State-Funktion 
 
 
  *old->
- *  Info: 'devspecString' is an Devicespecification String, for that the Setstate should be executed
+ *  Info: 'def_spec' is an Devicespecification String, for that the Setstate should be executed
  *        'SetstateName' is the Setstateibute name
  *        'SetstateVal' is the OPTIONAL Setstateibute value
 
- *  Para: const uint8_t *args  -> prt to Setstate command args text "definition reading value"
- *                                                         or "definition timestamp reading value"
- *        const size_t argsLen -> Setstate command args text length
- *  Rets: struct headRetMsgMultiple_s -> STAILQ head of multiple retMsg, if NULL -> no retMsg-entry
-
-*-------------------------------------
- *NEW->
- *  Para: const xString_t argsString -> Setstate arguments string:
- *                                   -> for Definition-State: "devspec timestamp reading value"
- *                                   -> or for Definition-State: "devspec reading value"
- *                                   -> or for Reading-State: "devspec timestamp reading value mime"
- *  Rets: struct xHeadMultipleStringSLTQ_s -> singly linked tail queue head to store multiple 
- *                                            return message strings. Loop entrys till STAILQ_EMPTY!
+ 
+ *  Para: const String_t args -> Setstate arguments string:
+ *                            -> for Definition-State: "devspec timestamp reading value"
+ *                            -> or for Definition-State: "devspec reading value"
+ *                            -> or for Reading-State: "devspec timestamp reading value mime"
+ *  Rets: struct Head_String_s -> STAILQ head of multiple retMsg, if NULL -> no retMsg
  * -------------------------------------------------------------------------------------------------
  */
-struct headRetMsgMultiple_s  //new Head_String_s
-Setstate_CommandFn (const uint8_t *args
-		,const size_t argsLen) //new const String_t argsString)
+struct Head_String_s
+Setstate_Command2Fn (const String_t args)
 {
   #if Setstate_Command_DBG >= 7
   SCDEFn->Log3Fn(Setstate_ProvidedByCommand.commandNameText
 	,Setstate_ProvidedByCommand.commandNameTextLen
 	,7
 	,"CommandFn called with args '%.*s'"
-	,argsLen
-	,args);
+	,args.len
+	,args.p_char);
   #endif
 
 // --------------------------------------------------------------------------------------------------
 
-// temporary conversion to make ready -> const xString_s argsString
-  String_t argsString;
-  argsString.p_char = args;
-  argsString.len = argsLen;
+  // prepare STAILQ head to store multiple 'ret_msg' elements
+  struct Head_String_s head_ret_msg;
 
-// -------------------------------------------------------------------------------------------------
+  // Initialize the queue
+  STAILQ_INIT(&head_ret_msg);
+
+// --------------------------------------------------------------------------------------------------
 
   // first seek-counter
   int i = 0;
 
   // stores extracted Devicespecification-String
-  String_t devspecString;
+  String_t def_spec;
 
   // start seeking at Arguments-String *
-  devspecString.p_char = 
-	argsString.p_char;
+  def_spec.p_char = 
+	args.p_char;
 
   // seek * to start of Devicespecification-String (after space  '\32')
-  while( (i < argsString.len) && (*devspecString.p_char == ' ') )
-	{ i++ ; devspecString.p_char++ ; }
+  while( (i < args.len) && (*def_spec.p_char == ' ') )
+	{ i++ ; def_spec.p_char++ ; }
 
   // stores extracted Time-Stamp-Reading-Value-String
-  String_t tiStReadingValueString;
+  String_t tist_reading_value;
 
   // start seeking at beginning of Devicespecification-String *
-  tiStReadingValueString.p_char = 
-	devspecString.p_char;
+  tist_reading_value.p_char = 
+	def_spec.p_char;
 
   // second seek-counter
   int j = 0;
 
   // seek * to the end of Devicespecification-String (before space '\32' !)
-  while( (i < argsString.len) && (*tiStReadingValueString.p_char != ' ') )
-	{ i++ ; j++ ; tiStReadingValueString.p_char++ ; }
+  while( (i < args.len) && (*tist_reading_value.p_char != ' ') )
+	{ i++ ; j++ ; tist_reading_value.p_char++ ; }
 
   // length of Devicespecification-String determined
-  devspecString.len = j;
+  def_spec.len = j;
 
   // seek * to start of Timestamp-Reading-Value-String (after space  '\32')
-  while( (i < argsString.len) && (*tiStReadingValueString.p_char == ' ') )
-	{ i++ ; tiStReadingValueString.p_char++ ; }
+  while( (i < args.len) && (*tist_reading_value.p_char == ' ') )
+	{ i++ ; tist_reading_value.p_char++ ; }
 
   // length of Timestamp-Reading-Value-String determined (assuming: rest of the args)
-  tiStReadingValueString.len = argsString.len - i;
+  tist_reading_value.len = args.len - i;
 
 // -------------------------------------------------------------------------------------------------
 
@@ -228,7 +256,7 @@ Setstate_CommandFn (const uint8_t *args
 // -------------------------------------------------------------------------------------------------
 
   // check usage by verifying lengths
-  if ( ( devspecString.len == 0 ) || ( tiStReadingValueString.len == 0 ) ) {
+  if ( ( def_spec.len == 0 ) || ( tist_reading_value.len == 0 ) ) {
 
 	// alloc mem for retMsg
 	Entry_String_t *retMsg_Entry_String =
@@ -240,8 +268,8 @@ Setstate_CommandFn (const uint8_t *args
 			,"Command Setstate could not interpret args '%.*s'!"
 			 " Usage: Setstate <devspec> <state-sub-args>"
 //			,( SCDERoot->globalCtrlRegA | F_INIT_DONE  ) ? "F" : "T"
-			,argsString.len
-			,argsString.p_char);
+			,args.len
+			,args.p_char);
 
 //"Bogus command was: setstate $param");
 //( SCDERoot->globalCtrlRegA | F_INIT_DONE )
@@ -249,22 +277,15 @@ Setstate_CommandFn (const uint8_t *args
 	// insert retMsg in stail-queue
 	STAILQ_INSERT_TAIL(&retMsg_Head_String, retMsg_Entry_String, entries);
 
-  	// return singly linked tail queue head, which holds multiple linked retMsg strings
-
-//-------
-struct headRetMsgMultiple_s x;
-STAILQ_INIT(&x);
-x.stqh_first = retMsg_Head_String.stqh_first;
-x.stqh_last = retMsg_Head_String.stqh_last;
-
-  	return x; // retMsg_Head_String;   
+   	// return head of singly linked tail queue, which holds 'ret_msg' elements
+    return 	head_ret_msg;
   }
 
 // -------------------------------------------------------------------------------------------------
 
   // get all Definitions which meet devspec in an SLTQ
   struct Head_String_s definition_Head_String =
-  	SCDEFn->Devspec2ArrayFn(devspecString);
+  	SCDEFn->Devspec2ArrayFn(def_spec);
 
 // -------------------------------------------------------------------------------------------------
 
@@ -333,11 +354,11 @@ x.stqh_last = retMsg_Head_String.stqh_last;
 // -------------------------------------------------------------------------------------------------
 
 		// create temorary string because we need temp zero terminated string for sscanf
-		char *tiStReadingValueStringZT;
-		asprintf(&tiStReadingValueStringZT
+		char *tist_reading_valueZT;
+		asprintf(&tist_reading_valueZT
 			,"%.*s"
-			,tiStReadingValueString.len
-			,tiStReadingValueString.p_char);
+			,tist_reading_value.len
+			,tist_reading_value.p_char);
 
 		// final data we needed for calling the StateFn
 		time_t readingTiSt;
@@ -349,7 +370,7 @@ x.stqh_last = retMsg_Head_String.stqh_last;
 
 		// check if a detailed Reading with Timestamp and MIME can be rebuilt - via regex
 		// e.g. '2017-08-08 22:42:25 myreading active TXT'
-		if ( 9 == sscanf(tiStReadingValueStringZT
+		if ( 9 == sscanf(tist_reading_valueZT
 			,"%d-%d-%d %d:%d:%d %s %s %s"
 				,&timeComp.tm_year
 				,&timeComp.tm_mon
@@ -817,7 +838,7 @@ if (stateMimeString.p_char)
 
 			// check if a STATE Reading with Timestamp can be rebuilt ?
 			// e.g. '2017-08-08 22:42:25 active'
-			if ( 7 == sscanf(tiStReadingValueStringZT
+			if ( 7 == sscanf(tist_reading_valueZT
 				,"%d-%d-%d %d:%d:%d %s"
 				,&timeComp.tm_year
 				,&timeComp.tm_mon
@@ -850,7 +871,7 @@ if (stateMimeString.p_char)
 			// seems that an STATE Reading with Timestamp could NOT be rebuilt
 			// else check if a STATE Reading without Timestamp can be rebuilt ?
 			// e.g. 'active'
-			else if ( 1 == sscanf(tiStReadingValueStringZT
+			else if ( 1 == sscanf(tist_reading_valueZT
 				,"%s"
 				,value ) ) {
 
@@ -953,7 +974,7 @@ if (stateMimeString.p_char)
 // -------------------------------------------------------------------------------------------------
 
 		// free the temp string tiSt-Reading-Value-String
-		free(tiStReadingValueStringZT);
+		free(tist_reading_valueZT);
 	}
 
 // -------------------------------------------------------------------------------------------------
@@ -975,17 +996,9 @@ if (stateMimeString.p_char)
 
 // -------------------------------------------------------------------------------------------------
 
-//-------
-struct headRetMsgMultiple_s x;
-STAILQ_INIT(&x);
-x.stqh_first = retMsg_Head_String.stqh_first;
-x.stqh_last = retMsg_Head_String.stqh_last;
-
-  	// return STAILQ head, stores multiple retMsg, if NULL -> no retMsg-entries
-  	return x; // retMsg_Head_String;   
+  // return head of singly linked tail queue, which holds 'ret_msg' elements
+  return head_ret_msg;
 }
-
-
 
 
 

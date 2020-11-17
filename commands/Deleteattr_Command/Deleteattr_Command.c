@@ -117,37 +117,65 @@ Deleteattr_InitializeCommandFn(SCDERoot_t* p_SCDERoot_from_core)
 
 
 
-/* -------------------------------------------------------------------------------------------------
- *  FName: Deleteattr - The Command main Fn
- *  Desc: Tries to delete an attributes from definition-specification matching Definitions.
- *        Then calls modules AttributeFn with cmd=del, retMsg.strText != NULL -> module sends veto.
- *  Info: 'def_spec' is the definition specification which is the input for the definition names
- *         matching query. For all matching Definitions this attribute will be deleted.
- *  Para: const uint8_t* p_args  -> space seperated command args text string "def_spec"
- *        const size_t args_len -> command args text length
- * NPara: const String_t args -> space seperated command args string "def_spec attr_name"
- *  Rets: struct headRetMsgMultiple_s -> STAILQ head of multiple retMsg, if NULL -> no retMsg
- * -------------------------------------------------------------------------------------------------
- */
-struct headRetMsgMultiple_s  //struct  Head_String_s
+
+
+
+// conversion to V2
+struct headRetMsgMultiple_s
 Deleteattr_CommandFn (const uint8_t* p_args
 		,const size_t args_len)
 {
-
   // temporary conversion to make ready -> const String_t args
   String_t args;
   args.p_char = p_args;
   args.len = args_len;
 
-// -------------------------------------------------------------------------------------------------
 
+// temporary conversion to make ready ->  head_ret_msg
+  struct Head_String_s head_ret_msg
+  	 = Deleteattr_Command2Fn(args);
+
+
+  struct headRetMsgMultiple_s x;
+  STAILQ_INIT(&x);
+  x.stqh_first =  head_ret_msg.stqh_first;
+  x.stqh_last =  head_ret_msg.stqh_last;
+  return x; 
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* -------------------------------------------------------------------------------------------------
+ *  FName: Deleteattr - The Command main Fn
+ *  Desc: Tries to delete Attributes from definition-specification matching Definitions.
+ *        Then calls modules AttributeFn with cmd=del, retMsg.strText != NULL -> module sends veto.
+ *  Info: 'def_spec' is the definition specification, the input for the definition names
+ *                   matching query. For all matching Definitions this attribute will be deleted.
+ *  Para: const String_t args -> space seperated command args string "def_spec attr_name"
+ *  Rets: struct Head_String_s -> STAILQ head of multiple retMsg, if NULL -> no retMsg
+ * -------------------------------------------------------------------------------------------------
+ */
+struct Head_String_s
+Deleteattr_Command2Fn (const String_t args)
+{
   #if Deleteattr_Command_DBG >= 7
   p_SCDEFn->Log3Fn(Deleteattr_ProvidedByCommand.commandNameText
 	,Deleteattr_ProvidedByCommand.commandNameTextLen
 	,7
 	,"CommandFn called with args '%.*s'"
-	,args_len
-	,p_args);
+	,args.len
+	,args.p_char);
   #endif
 
 // --------------------------------------------------------------------------------------------------
@@ -169,6 +197,9 @@ Deleteattr_CommandFn (const uint8_t* p_args
   // the total seek-counter
   int i = 0;
 	
+  // an element seek-counter
+  int j = 0;
+  
   // seek * to start of  def-spec text ('\32' after space)
   while( ( i < args.len ) && ( *def_spec.p_char == ' ' ) ) { i++ ; def_spec.p_char++ ; }
 
@@ -179,9 +210,6 @@ Deleteattr_CommandFn (const uint8_t* p_args
 
   // set * to start of possible attr-name text (seek-start-pos)
   attr_name.p_char = def_spec.p_char;
-
-  // an element seek-counter
-  int j = 0;
 
   // seek to next space '\32'
   while( ( i < args.len ) && ( *attr_name.p_char != ' ' ) ) { i++, j++ ; attr_name.p_char++ ; }
@@ -230,14 +258,7 @@ Deleteattr_CommandFn (const uint8_t* p_args
 	STAILQ_INSERT_TAIL(&head_ret_msg, p_entry_ret_msg, entries);
 
   	// return head of singly linked tail queue, which holds 'ret_msg' elements
-
-
-// temporary conversion to make ready ->  head_ret_msg
-struct headRetMsgMultiple_s x;
-STAILQ_INIT(&x);
-x.stqh_first =  head_ret_msg.stqh_first;
-x.stqh_last =  head_ret_msg.stqh_last;
-  	return x; // head_ret_msg;
+    return 	head_ret_msg;
   }
 
 // -------------------------------------------------------------------------------------------------
@@ -270,12 +291,8 @@ x.stqh_last =  head_ret_msg.stqh_last;
 	// insert ret_msg as entry in stail-queue
 	STAILQ_INSERT_TAIL(&head_ret_msg, p_entry_ret_msg, entries);
 
-  // temporary conversion to make ready ->  head_ret_msg
-struct headRetMsgMultiple_s x;
-STAILQ_INIT(&x);
-x.stqh_first =  head_ret_msg.stqh_first;
-x.stqh_last =  head_ret_msg.stqh_last;
-  	return x; // head_ret_msg;
+  	// return head of singly linked tail queue, which holds 'ret_msg' elements
+  	return head_ret_msg;
   }
 
 // -------------------------------------------------------------------------------------------------
@@ -546,14 +563,8 @@ x.stqh_last =  head_ret_msg.stqh_last;
 
 // -------------------------------------------------------------------------------------------------
 
-
-// temporary conversion to make ready ->  head_ret_msg
-struct headRetMsgMultiple_s x;
-STAILQ_INIT(&x);
-x.stqh_first =  head_ret_msg.stqh_first;
-x.stqh_last =  head_ret_msg.stqh_last;
-
-  return x; // head_ret_msg;
+  // return head of singly linked tail queue, which holds 'ret_msg' elements
+  return head_ret_msg;
 }
 
 

@@ -136,32 +136,52 @@ set room=kitchen:FILTER=STATE!=off off
 
 
 
-/* -------------------------------------------------------------------------------------------------
- *  FName: Attr - The Command main Fn
- *  Desc: Tries to add Attributes to definition-specification matching Definitions, with optional Value.
- *        Then calls modules AttributeFn with cmd=add, if retMsg.strText != NULL -> module sends veto.
- *  Info: 'def_spec' is the definition specification which is the input for the definition names
- *                    matching query. All matching Definitions will get this attribute assigned.
- *        'attr_name' is the attribute name
- *        'attr_value' is the OPTIONAL attribute value (NULL IF NO VALUE ASSIGNED!)
- *  Para: const uint8_t* p_args  -> space seperated command args text string "def_spec attr_name attr_val"
- *        const size_t args_len -> command args text length
- * NPara: const String_t args -> space seperated command args string "def_spec attr_name attr_val"
- *  Rets: struct headRetMsgMultiple_s -> STAILQ head of multiple retMsg, if NULL -> no retMsg
- * -------------------------------------------------------------------------------------------------
- */
-struct headRetMsgMultiple_s //struct  Head_String_s
+
+// conversion to V2
+struct headRetMsgMultiple_s
 Attr_CommandFn (const uint8_t* p_args
 		,const size_t args_len)
 {
-
   // temporary conversion to make ready -> const String_t args
   String_t args;
   args.p_char = p_args;
   args.len = args_len;
 
-// -------------------------------------------------------------------------------------------------
 
+// temporary conversion to make ready ->  head_ret_msg
+  struct Head_String_s head_ret_msg
+  	 = Attr_Command2Fn(args);
+
+
+  struct headRetMsgMultiple_s x;
+  STAILQ_INIT(&x);
+  x.stqh_first =  head_ret_msg.stqh_first;
+  x.stqh_last =  head_ret_msg.stqh_last;
+  return x; 
+}
+
+
+
+
+
+
+
+
+/* -------------------------------------------------------------------------------------------------
+ *  FName: Attr - The Command main Fn
+ *  Desc: Tries to add Attributes to definition-specification matching Definitions, with optional Value.
+ *        Then calls modules AttributeFn with cmd=add, if retMsg.strText != NULL -> module sends veto.
+ *  Info: 'def_spec' is the definition specification, the input for the definition names
+ *                   matching query. All matching definitions will get this attribute assigned.
+ *        'attr_name' is the attribute name
+ *        'attr_value' is the OPTIONAL attribute value (NULL IF NO VALUE ASSIGNED!)
+ *  Para: const String_t args -> space seperated command args string "def_spec attr_name attr_val"
+ *  Rets: struct Head_String_s -> STAILQ head of multiple retMsg, if NULL -> no retMsg
+ * -------------------------------------------------------------------------------------------------
+ */
+struct Head_String_s
+Attr_Command2Fn(const String_t args)
+{
   #if Attr_Command_DBG >= 7
   p_SCDEFn->Log3Fn(Attr_ProvidedByCommand.commandNameText
 	,Attr_ProvidedByCommand.commandNameTextLen
@@ -189,7 +209,10 @@ Attr_CommandFn (const uint8_t* p_args
 
   // the total seek-counter
   int i = 0;
-	
+  
+  // an element seek-counter
+  int j = 0;
+  
   // seek * to start of  def-spec text ('\32' after space)
   while( ( i < args.len ) && ( *def_spec.p_char == ' ' ) ) { i++ ; def_spec.p_char++ ; }
 
@@ -200,9 +223,6 @@ Attr_CommandFn (const uint8_t* p_args
 
   // set * to start of possible attr-name text (seek-start-pos)
   attr_name.p_char = def_spec.p_char;
-
-  // an element seek-counter
-  int j = 0;
 
   // seek to next space '\32'
   while( ( i < args.len ) && ( *attr_name.p_char != ' ' ) ) { i++, j++ ; attr_name.p_char++ ; }
@@ -264,21 +284,14 @@ Attr_CommandFn (const uint8_t* p_args
 	// response with error text
 	p_entry_ret_msg->string.len = asprintf(&p_entry_ret_msg->string.p_char,
 		"Error! Could not interpret '%.*s'! Usage: Attr <def-spec> <attr-name> [<attr-val>]",
-		args.len,
+		(int) args.len,
 		args.p_char);
 
 	// insert ret_msg as entry in stail-queue
 	STAILQ_INSERT_TAIL(&head_ret_msg, p_entry_ret_msg, entries);
 
   	// return head of singly linked tail queue, which holds 'ret_msg' elements
-
-
-// temporary conversion to make ready ->  head_ret_msg
-struct headRetMsgMultiple_s x;
-STAILQ_INIT(&x);
-x.stqh_first =  head_ret_msg.stqh_first;
-x.stqh_last =  head_ret_msg.stqh_last;
-  	return x; // head_ret_msg;
+    return 	head_ret_msg;
   }
 
 // -------------------------------------------------------------------------------------------------
@@ -303,18 +316,14 @@ x.stqh_last =  head_ret_msg.stqh_last;
 	// response with error text
 	p_entry_ret_msg->string.len = asprintf(&p_entry_ret_msg->string.p_char,
 		"Could not find an <def-spec> matching definition! Check '%.*s'!",
-		def_spec.len,
+		(int) def_spec.len,
 		def_spec.p_char);
 
 	// insert ret_msg as entry in stail-queue
 	STAILQ_INSERT_TAIL(&head_ret_msg, p_entry_ret_msg, entries);
- 
-  // temporary conversion to make ready ->  head_ret_msg
-struct headRetMsgMultiple_s x;
-STAILQ_INIT(&x);
-x.stqh_first =  head_ret_msg.stqh_first;
-x.stqh_last =  head_ret_msg.stqh_last;
-  	return x; // head_ret_msg;
+
+  	// return head of singly linked tail queue, which holds 'ret_msg' elements
+  	return head_ret_msg;
   }
 
 // -------------------------------------------------------------------------------------------------
@@ -551,15 +560,8 @@ x.stqh_last =  head_ret_msg.stqh_last;
 		STAILQ_NEXT(p_entry_dev_spec_matching_definitions, entries);
   }
 
-// -------------------------------------------------------------------------------------------------
-
-// temporary conversion to make ready ->  head_ret_msg
-struct headRetMsgMultiple_s x;
-STAILQ_INIT(&x);
-x.stqh_first =  head_ret_msg.stqh_first;
-x.stqh_last =  head_ret_msg.stqh_last;
-
-  return x; // head_ret_msg;
+  // return head of singly linked tail queue, which holds 'ret_msg' elements
+  return head_ret_msg;
 }
 
 
