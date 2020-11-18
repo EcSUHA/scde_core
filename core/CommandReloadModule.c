@@ -35,6 +35,7 @@ CommandReloadModule(const uint8_t* p_typeame
   Log("HCTRL",16,"Loading Module");
 
 
+
   return NULL;
   // we need ptr to Module_t. Contains function callbacks for module operation
   ProvidedByModule_t* ProvidedByNEWModule;
@@ -66,6 +67,7 @@ CommandReloadModule(const uint8_t* p_typeame
 
 
   Log("HCTRL",16,"Module loaded/n");
+
 /*
   if (LoadedModule == NULL)
 
@@ -89,6 +91,7 @@ CommandReloadModule(const uint8_t* p_typeame
   STAILQ_INSERT_HEAD(&SCDERoot.HeadModules, NewModule, entries);
 
   Log("HCTRL",16,"Module initializzed/n");
+
 
 /*
   Log3((const uint8_t*) Name

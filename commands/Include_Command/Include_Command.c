@@ -317,9 +317,9 @@ free(fileName);
   strText_t old_config_file = SCDERoot->current_config_file;
 
   // set temporary to filename from include arg
-//  SCDERoot->current_config_file.strText = fileNameText;			// besser machen!!!!
-//  SCDERoot->current_config_file.strTextLen = fileNameTextLen;
-  SCDERoot->current_config_file = file_name;
+  SCDERoot->current_config_file.strText = (char *) file_name.p_char;			// besser machen!!!!
+  SCDERoot->current_config_file.strTextLen = file_name.len;
+ // SCDERoot->current_config_file = file_name;
 
   // holds the complete rebuilt line/multiline cmd row when reconstructed
   String_t complete_cmd_row;

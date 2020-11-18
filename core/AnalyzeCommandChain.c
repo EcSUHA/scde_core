@@ -40,8 +40,7 @@ struct headRetMsgMultiple_s //new xHeadMultipleStringSLTQ_s
 AnalyzeCommandChain(const uint8_t *argsString
 		,const size_t argsStringLen)
 {
-
-/*  LOGD("Fn AnalyzeCommandChain called with args '%.*s'"
+/*	Log3("core",16,"Fn AnalyzeCommandChain called with args '%.*s'"
 	,argsStringLen
 	,argsString);*/
 
@@ -156,3 +155,10 @@ AnalyzeCommandChain(const uint8_t *argsString
   // return STAILQ head, stores multiple RetMsg, if NULL -> no RetMsg-entries
   return headRetMsgMultiple;
 }
+
+
+
+
+
+
+

@@ -33,12 +33,10 @@ struct headRetMsgMultiple_s
 AnalyzeCommand(const uint8_t *args
 		, const size_t argsLen)
 {
-/*
-	LOGD("Fn AnalyzeCommand(%.*s,%d) called.\n"
-		,argsLen
-		,args
-		,argsLen);
-*/
+/*	Log3("core",16,"Fn AnalyzeCommand called with args '%.*s'"
+	,args
+	,argsLen);*/
+
   // prepare STAILQ head for multiple RetMsg storage
   struct headRetMsgMultiple_s headRetMsgMultiple;
 
