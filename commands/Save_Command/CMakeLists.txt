@@ -6,4 +6,4 @@ project(Save_Command)
 
 add_library(Save_Command "Save_Command.c")
 
-target_include_directories(Save_Command PRIVATE "include" "../../../include")
+target_include_directories(Save_Command PRIVATE "include")

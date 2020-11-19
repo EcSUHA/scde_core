@@ -5,5 +5,5 @@ project(Global_Module)
 
 add_library(Global_Module "Global_Module.c")
 
-target_include_directories(Global_Module PRIVATE "include" "../../../include")
+target_include_directories(Global_Module PRIVATE "include")
 

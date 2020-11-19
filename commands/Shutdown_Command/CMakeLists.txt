@@ -6,4 +6,4 @@ project(Shutdown_Command)
 
 add_library(Shutdown_Command "Shutdown_Command.c")
 
-target_include_directories(Shutdown_Command PRIVATE "include" "../../../include")
+target_include_directories(Shutdown_Command PRIVATE "include")

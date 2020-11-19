@@ -6,4 +6,4 @@ project(Define_Command)
 
 add_library(Define_Command "Define_Command.c")
 
-target_include_directories(Define_Command PRIVATE "include" "../../../include")
+target_include_directories(Define_Command PRIVATE "include")

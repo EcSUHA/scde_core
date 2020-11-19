@@ -1,9 +1,10 @@
 cmake_minimum_required(VERSION 2.6 FATAL_ERROR)
 cmake_policy(VERSION 2.6)
 
-project(core)
+project(SCDE_CORE)
 
-add_library(core	"SCDE.c"
+add_library(${PROJECT_NAME}	
+					"SCDE.c"
 					"ActivateCommand.c"
 					"ActivateModule.c"
 					"AnalyzeCommand.c"
@@ -31,7 +32,11 @@ add_library(core	"SCDE.c"
 					"MakeDeviceName.c"
 					"MakeReadingName.c"
 					"TimeNow.c"
-					"WriteStateFile.c")
+					"WriteStateFile.c"			
+)
 
-target_include_directories(core PRIVATE "include"
-										"../../include")
+target_include_directories(${PROJECT_NAME} 
+								     PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include
+									 PUBLIC	"../../main/include"
+									 PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
+)

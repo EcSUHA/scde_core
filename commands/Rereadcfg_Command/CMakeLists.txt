@@ -6,4 +6,4 @@ project(Rereadcfg_Command)
 
 add_library(Rereadcfg_Command "Rereadcfg_Command.c")
 
-target_include_directories(Rereadcfg_Command PRIVATE "include" "../../../include")
+target_include_directories(Rereadcfg_Command PRIVATE "include")

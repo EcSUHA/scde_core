@@ -6,4 +6,4 @@ project(Rename_Command)
 
 add_library(Rename_Command "Rename_Command.c")
 
-target_include_directories(Rename_Command PRIVATE "include" "../../../include")
+target_include_directories(Rename_Command PRIVATE "include")

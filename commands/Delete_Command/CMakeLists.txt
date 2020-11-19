@@ -6,4 +6,4 @@ project(Delete_Command)
 
 add_library(Delete_Command "Delete_Command.c")
 
-target_include_directories(Delete_Command PRIVATE "include" "../../../include")
+target_include_directories(Delete_Command PRIVATE "include")

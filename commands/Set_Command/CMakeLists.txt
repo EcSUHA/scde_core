@@ -6,4 +6,4 @@ project(Set_Command)
 
 add_library(Set_Command "Set_Command.c")
 
-target_include_directories(Set_Command PRIVATE "include" "../../../include")
+target_include_directories(Set_Command PRIVATE "include")
