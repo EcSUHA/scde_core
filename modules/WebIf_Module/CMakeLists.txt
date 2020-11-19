@@ -22,8 +22,8 @@ add_library(WebIf_Module
 
 target_include_directories(WebIf_Module PRIVATE 
 	"include"
-	"../../../include"
+#	"../../../include"
 	
-	"ESP32_DeVICE_Moduleinclude"
+#	"ESP32_DeVICE_Moduleinclude"
 )
 

@@ -6,17 +6,11 @@
 #include <sys/queue.h>
 
 
-// include the forward declarations of SCDE-Core components
-#include "argparse_s_fwd.h"
 
 
 
-// -------------------------------------------------------------------------------------------------
 
-/*
- * Project TYPO corrections (temporary)
- */ 
- 
+
 // renamed during work
 #define Common_Definition_s  Entry_Definition_s
 #define Common_Definition_t  Entry_Definition_t
@@ -36,10 +30,8 @@
 
 
 // -------------------------------------------------------------------------------------------------
+// initial type definitions ...
 
-/*
- * SCDE forward declarations
- */ 
 
 // nach unten verschieben ? doppelt ?
 typedef struct Common_Definition_s Common_Definition_t;
@@ -64,23 +56,6 @@ typedef struct Entry_Definition_s Entry_Definition_t;
 typedef struct Common_StageXCHG_s Common_StageXCHG_t;
 
 // -------------------------------------------------------------------------------------------------
-
-
-
-// String_t holds an string with given length. 
-// - the String is NOT zero terminated.
-// - the characters are stored at ptr in allocated memory
-// - do NOT forget to free rhe memory
-typedef struct String_s String_t;
-
-// Entry_String_t holds an entryto hold multiple String_t strings (in an singly linked tail queue)
-typedef struct Entry_String_s Entry_String_t;
-
-
-
-// the global stuff from the SCDE-Core Fn - here???
-#include "argparse_s.h"
-
 
 
 
@@ -110,7 +85,7 @@ typedef struct Entry_String_s Entry_String_t;
 // - the String is NOT zero terminated.
 // - the characters are stored at ptr in allocated memory
 // - do NOT forget to free rhe memory
-//typedef struct String_s String_t;
+typedef struct String_s String_t;
 
 /*
  * String_s (struct)
@@ -351,8 +326,9 @@ typedef struct headRetMsgMultiple_s (*WriteStatefileFn_t) ();
 typedef String_t* (*Get_Attr_Val_By_Def_Name_And_Attr_Name_Fn_t) (const String_t* p_def_name, const String_t* p_attr_name);
 
 
+
 // Argument Parser - (helpers)
-/*
+
   // typedef for Argument Parser - Split Arguments To Allocated Mememory Fn
   typedef char ** (*ArgParse_SplitArgsToAllocatedMemFn_t) (int *argc, uint8_t *argsText,  size_t argsTextLen);
 
@@ -375,7 +351,8 @@ typedef String_t* (*Get_Attr_Val_By_Def_Name_And_Attr_Name_Fn_t) (const String_t
   // typedef for Argument Parser - Prepare Leadin Error Message Fn
   typedef void (*ArgParse_PrepareLeadinErrorMsgFn_t) (struct argparse *self, const struct argparse_option *opt,
 		const char *reason, int flags);
-*/
+
+
 
 /*
  * SCDEFn (SCDE Functions) typedef
@@ -780,7 +757,7 @@ struct Entry_Definition_s {
 
   int defCtrlRegA; //common_definition_control_register_a	// Definition Control Reg A (enum Common_DefCtrlRegA)
 
-//  xSemaphoreHandle def_mux; //definition_mux 
+ // xSemaphoreHandle def_mux; //definition_mux 
 
   bulkUpdateReadings_t *bulkUpdateReadings;
   STAILQ_HEAD (stailhead6, reading_s) headReadings;//head_readings	// Link to assigned Attributes
@@ -1047,9 +1024,6 @@ enum global_control_register_a {
 };
 
 // the global stuff from the SCDE-Core Fn - here???
-//#include "argparse_s.h"
-
-
-
+#include "ArgParse_s.h"
 
 #endif /*_SCDE_S_H_*/
