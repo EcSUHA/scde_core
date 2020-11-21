@@ -252,8 +252,14 @@ Define_CommandFn (const uint8_t* p_args,
  	module_name_len);
 
   // do we need to reload Module?
-  if (!p_module)
-	p_module = p_SCDEFn->CommandReloadModuleFn(p_module_name, module_name_len);
+  if (!p_module) {
+  
+    String_t type_name;					// conversion to new !
+    type_name.len = module_name_len;
+    type_name.p_char = p_module_name;
+    
+	p_module = p_SCDEFn->CommandReloadModuleFn(type_name);
+  }
 
   // still no Module -> we don't have it, error!
   if (!p_module) {
@@ -264,7 +270,7 @@ Define_CommandFn (const uint8_t* p_args,
 
 	// response with error text
 	p_retMsg->strTextLen = asprintf(&p_retMsg->strText,
-		"Could not find a Module '%.*s'!",
+		"Error ! Could not load Module-Type '%.*s'.",
 		module_name_len,
 		p_module_name);
 
@@ -376,17 +382,17 @@ Define_CommandFn (const uint8_t* p_args,
 		Define_ProvidedByCommand.commandNameTextLen,
 		7,
 		"Calling DefineFn of Module '%.*s' for construction of new Definition '%.*s' "
-		"using arguments '%.*s'. (Nr.:%d, Initial State:%.*s)",
+		"using arguments '%.*s'. (Nr.:%d, Initial State:%.*s).",
 		p_new_common_definition->module->provided->typeNameLen,
 		p_new_common_definition->module->provided->typeName,
 		p_new_common_definition->nameLen,
 		p_new_common_definition->name,
 		p_new_common_definition->definitionLen,
-      		p_new_common_definition->definition,
-    		p_new_common_definition->nr,
+      	p_new_common_definition->definition,
+    	p_new_common_definition->nr,
 		p_new_common_definition->stateLen,
-     		p_new_common_definition->state);
-		#endif
+     	p_new_common_definition->state);
+	#endif
 
 	// call Modules DefineFn. Interpret retMsgMultipleStringSLTQE != NULL as veto !
 	strTextMultiple_t* p_retMsg = 

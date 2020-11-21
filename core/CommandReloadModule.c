@@ -17,56 +17,178 @@
 
 
 
-/* Category: SCDE Core Fn
- * --------------------------------------------------------------------------------------------------
- *  FName: CommandReload
- *  Desc: Initially loads or executes a reload of an Module of given Type-Name
- *  Info:  
- *  Para: const uint8_t typeName -> Text string of Modules Type-Name that should be reloaded 
- *        const size_t typeNameLen -> length of the typeName
- *  Rets: Module_t* -> Pointer to Module / NULL on error
- *--------------------------------------------------------------------------------------------------
- */
-Module_t*
-CommandReloadModule(const uint8_t* p_typeame
-	,const size_t typeNameLen)
+
+
+
+
+
+
+
+
+#include <dlfcn.h>
+
+
+#define LIBEQUAL "MusterModul.so"
+
+/* dynamische Bibliothek laden */
+/*
+static void *
+my_load_dyn (const char *lib)
 {
-  //  printf ("Command Reload called. Loading Module Type: %s", text);
-  Log("HCTRL",16,"Loading Module");
+  static void *handle;
 
+  handle = dlopen(LIBEQUAL, RTLD_NOW);
 
-
-  return NULL;
-  // we need ptr to Module_t. Contains function callbacks for module operation
-  ProvidedByModule_t* ProvidedByNEWModule;
-
-  ProvidedByNEWModule = (ProvidedByModule_t*) malloc(sizeof(ProvidedByModule_t));
-  // search List of embedded Modules by TypeName
-
-
-
-//  ProvidedByNEWModule =
-
-/*  // loading external Module
-  else
+  if (handle == NULL)
 	{
-
-	// handle for the lib
-	void *LibHandle;
-
-	// lib handle 
-	LibHandle = my_load_dyn (TypeName);
-
-	// Get ptr to ProvidedByModule_t. We need the function callbacks for module operation
-	ProvidedByModule_t* ProvidedByNEWModule;
-	printf ("Die Werte sind nicht gleich\n");
-	ProvidedByNEWModule = dlsym(LibHandle, "ProvidedByModule");
-
+	printf ("Fehler bei dlopen(): %s\n", dlerror ());
+	exit (EXIT_FAILURE);
 	}
+
+  return handle;
+}
 */
 
 
-  Log("HCTRL",16,"Module loaded/n");
+
+
+
+/* Funktion aus der dynamischen Bibliothek laden */
+/*
+static void *
+my_load_func (void *handle, const char *func)
+{
+  void *funcptr = dlsym (handle, func);
+
+  if (funcptr == NULL)
+	{
+	printf ("Fehler bei dlsym(): %s\n", dlerror ());
+	exit (EXIT_FAILURE);
+	}
+
+  return funcptr;
+}
+*/
+
+
+/* Speicher wieder freigeben */
+/*
+static void
+my_close_func (void *handle)
+{
+  if (dlclose (handle))
+	printf ("Fehler bei dlclose(): %s\n", dlerror ());
+}
+*
+/
+
+//http://stackoverflow.com/questions/17081131/how-to-call-a-function-in-the-main-program-from-a-dynamically-loaded-shared-libr
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* Category: SCDE Core Fn
+ * --------------------------------------------------------------------------------------------------
+ *  FName: CommandReloadModule
+ *  Desc: Initially loads or executes a reload of an Module of given type-name
+ *  Info:  
+ *  Para: const String_t type_name -> Modules type-name that should be re?-loaded 
+ *  Rets: Module_t* -> Pointer to loaded Module / NULL on error, not loaded
+ *--------------------------------------------------------------------------------------------------
+ */
+Module_t*
+CommandReloadModule(const String_t type_name)
+{
+
+#if defined(ESP_PLATFORM)
+
+  #if CORE_SCDE_DBG >= 1
+  Log("CommandReloadModule",1,"Error!, platform has no support for loading Type-Name '%.*s'."
+ 	,type_name.len
+	,type_name.p_char);
+  #endif
+    
+  return NewModule;
+  
+#else// LINUX_PLATFORM
+
+  // build lib.so filename
+  char *file_name;
+  asprintf(&file_name
+		,"/home/maikschulze/LINUX/LINUX_Device/build/release/main/lib/modules/Telnet_Module/lib%.*s_Module.so"
+		,type_name.len
+		,type_name.p_char);
+		
+  #if CORE_SCDE_DBG >= 7
+  Log("CommandReloadModule",7,"(Re-)Loading Module with Type-Name '%.*s'."
+  	,type_name.len
+	,type_name.p_char);
+  #endif
+		
+  // handle for the lib
+  void *lib_handle;
+
+  // open the module (lib) 
+  lib_handle = dlopen(file_name, RTLD_NOW);
+	
+  if (lib_handle == NULL) {
+  
+    #if CORE_SCDE_DBG >= 1
+    Log("CommandReloadModule",1,"Error!, loading Type-Name '%.*s' failed, %s."
+ 		,type_name.len
+		,type_name.p_char
+		,dlerror() );
+    #endif
+		
+	// free the constructed file-name
+	free(file_name);
+
+	// return with result: not found
+	return NULL;
+  }
+	
+  // free the constructed file-name
+  free(file_name);
+  
+// ---
+  
+  // Get ptr to ProvidedByModule_t. We need the function callbacks for module operation
+  ProvidedByModule_t* ProvidedByNEWModule;
+	
+  ProvidedByNEWModule = dlsym(lib_handle, "Telnet_ProvidedByModule");
+
+  // failed to get ?
+  if (!ProvidedByNEWModule ) {
+  
+	  Log("HCTRL",16,"ProvidedByModule not found!/n");
+  
+      // unload lib here
+  
+	return NULL;
+  }
+
+
+
 
 /*
   if (LoadedModule == NULL)
@@ -79,15 +201,17 @@ CommandReloadModule(const uint8_t* p_typeame
 		}
 */
 
+ 
 
-  // Call the Initialize Function
-//  ProvidedByNEWModule->InitializeFn(&SCDEFn);
 
-  // prepare new module and store 
+  // call the Initialize Function
+  ProvidedByNEWModule->InitializeFn(&SCDERoot);
+
+  // store the Module provided Fn and handle 
   Module_t* NewModule;
   NewModule = (Module_t*) malloc(sizeof(Module_t));
   NewModule->provided = ProvidedByNEWModule;
-//  NewModule->LibHandle = LibHandle;
+  NewModule->lib_handle = lib_handle;
   STAILQ_INSERT_HEAD(&SCDERoot.HeadModules, NewModule, entries);
 
   Log("HCTRL",16,"Module initializzed/n");
@@ -103,16 +227,17 @@ CommandReloadModule(const uint8_t* p_typeame
 	,AttrValue);
 */
 
-
+/*
  // debug: list currently stored modules
   Module_t *Module;
-  STAILQ_FOREACH(Module, &SCDERoot.HeadModules, entries)
-	{
+  STAILQ_FOREACH(Module, &SCDERoot.HeadModules, entries) {
 	printf("LM Name:\"%.*s\"\n"
 		,Module->provided->typeNameLen
 		,Module->provided->typeName);
-	}
+  }
+*/
 
   return NewModule;
+#endif // LINUX_PLATFORM
 }
 

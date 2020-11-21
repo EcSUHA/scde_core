@@ -21,22 +21,21 @@
 
 /* --------------------------------------------------------------------------------------------------
  *  FName: Log3
- *  Desc: This is the main logging function with 3 infos:
- *        time-stamp, loglevel, creator ant the log-text
+ *  Desc: This is the logging function provided for the modular elements with 4 infos:
+ *        time-stamp, loglevel, creator Module/Command, and the log-text elements
  *  Info: Level 0=System; 16=debug
- *        DO NOT FORGET TO FREE char* LogText -> ITS ALLOCATED MEMORY !!!
- *  Para: const uint8_t *name -> the creator name of this log entry
- *        const size_t nameLen -> length of the creator name of this log entry
- *        const uint8_t LogLevel -> the log level of this entry
- *        const char *format -> ptr to the text
- *        ... -> arguments to fill text
+ *  Para: const uint8_t *p_name_char-> the creator name (Module/Command) of this log entry
+ *        const size_t name_len -> length of the creator name of this log entry
+ *        const uint8_t log_level -> the log-level of this log entry
+ *        const char *format -> ptr to further elements used by the printf Fn
+ *        ... -> further arguments
  *  Rets: -/-
  * --------------------------------------------------------------------------------------------------
  */
 void
-Log3 (const uint8_t *name
-		,const size_t nameLen
-		,const uint8_t LogLevel
+Log3(const uint8_t *p_name_char
+		,const size_t name_len
+		,const uint8_t log_level
 		,const char *format
 		,...)
 {
@@ -51,16 +50,16 @@ Log3 (const uint8_t *name
   localtime_r(&nowTist, &timeinfo);
 
   // time,loglevel,name
-  printf("Log3|%d.%d.%d %d:%d:%d %d: %.*s: "
+  printf("%d.%d.%d %d:%d:%d (%d) %.*s: "	//Log3|
 		,timeinfo.tm_year+1900
 		,timeinfo.tm_mon+1
 		,timeinfo.tm_mday
 		,timeinfo.tm_hour
 		,timeinfo.tm_min
 		,timeinfo.tm_sec
-		,LogLevel
-		,nameLen
-		,name);
+		,log_level
+		,name_len
+		,p_name_char);
 
   // the variable arguments
   va_list list;

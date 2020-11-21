@@ -117,8 +117,8 @@ typedef struct Entry_String_s Entry_String_t;
  * Holds one string (ptr to characters-array (not zero terminated) and the length of this array)
  */
 struct String_s {
-  uint8_t* p_char;		// typically ptr to allocated memory filled with an character-array
-  size_t len;			// length of the not zero terminated character-array
+  uint8_t* p_char;		// ptr to allocated memory, filled with character-array, not zero terminated!
+  size_t len;			// length of the character-array
 };
 
 
@@ -269,8 +269,8 @@ typedef struct headRetMsgMultiple_s (*AnalyzeCommandChainFn_t) (const uint8_t *a
 // typedef for Call GetFn by Def-Name - for 2 stage desings, requests data
 typedef int (* CallGetFnByDefNameFn_t) (const uint8_t *nameText, const size_t nameTextLen, Common_Definition_t *sourceCommon_Definition, void *X);
 
-//
-typedef Module_t* (*CommandReloadModuleFn_t)(const uint8_t *typeName, const size_t typeNameLen);
+// typedef for CommandReloadModule - Initially loads or executes a reload of an Module of given type-name
+typedef Module_t* (*CommandReloadModuleFn_t)(const String_t type_name);
 
 // typedef for Devspec2ArrayFn - returns all definitions that match the given devicespecification (devspec)
 //typedef struct xHeadMultipleStringSLTQ_s (*Devspec2ArrayFn_t) (const xString_t devspecString);
@@ -312,11 +312,12 @@ typedef bool (*GoodReadingNameFn_t) (const String_t nameString);
 // prints data as Hex-Dump to debug terminal
 typedef void (* HexDumpOutFn_t) (char *desc, void *addr, int len);
 
-//
-typedef void (*LogFn_t) (char *Device, int LogLevel, char *Text);
+// ! REMOVE ! should be core only log Fn
+typedef void (*LogFn_t) (const char *internal_fn, const uint8_t log_level, const char *format, ...);
 
-//
-typedef void (*Log3Fn_t) (const uint8_t *name, const size_t nameLen, const uint8_t LogLevel, const char *format, ...);
+// log Fn for modular elements (Modules & Commands)
+typedef void (*Log3Fn_t) (const uint8_t *p_name_char, const size_t name_len, const uint8_t log_level, const char *format, ...);
+//new?: typedef void (*Log3Fn_t) (const String_t internal_fn, const uint8_t log_level, const char *format, ...);
 
 //
 typedef void (*Log4Fn_t) (char *text);
@@ -606,9 +607,9 @@ struct ProvidedByModule_s {
  * - done in InitializeFn (after module load)
  */
 struct Entry_Module_s {
-  STAILQ_ENTRY (Entry_Module_s) entries;		// Link to next loaded Module
+  STAILQ_ENTRY (Entry_Module_s) entries;	// Link to next loaded Module
   ProvidedByModule_t *provided;				// Ptr to Provided by Module Info
-  void* LibHandle;				// Handle to this loaded Module
+  void* lib_handle;							// Handle to this loaded Module
 
  // place  Provided  FNS here direct ?
 };

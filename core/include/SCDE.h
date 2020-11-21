@@ -48,8 +48,8 @@ struct headRetMsgMultiple_s AnalyzeCommandChain(const uint8_t *args, const size_
 //
 int CallGetFnByDefName(const uint8_t *nameText, const size_t nameTextLen, Common_Definition_t *sourceCommon_Definition, void *X);
 
-//
-Module_t* CommandReloadModule(const uint8_t *typeName, const size_t typeNameLen);
+// Initially loads or executes a reload of an Module of given type-name
+Module_t* CommandReloadModule(const String_t type_name);
 
 // returns all definitions that match devspec
 struct Head_String_s Devspec2Array(const String_t devspecString);
@@ -90,11 +90,11 @@ bool GoodReadingName(const String_t nameString);
 // prints data as Hex-Dump to debug terminal
 void HexDumpOut (char *desc, void *addr, int len);
 
-//
-void Log(char *Device, int LogLevel, char *Text);
+// the log Fn for the core elements
+void Log(const char *internal_fn, const uint8_t log_level, const char *format, ...);
 
-//
-void Log3(const uint8_t *name, const size_t nameLen, const uint8_t LogLevel, const char *format, ...);
+// the log Fn for modular elements (Modules & Commands)
+void Log3(const uint8_t *p_name_char, const size_t name_len, const uint8_t log_level, const char *format, ...);
 
 //
 void Log4(char *text);

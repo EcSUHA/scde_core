@@ -118,7 +118,7 @@ Global_Initialize(SCDERoot_t* SCDERootptr)
   SCDEFn_at_Global_M->Log3Fn(Global_ProvidedByModule.typeName
 		  ,Global_ProvidedByModule.typeNameLen
 		  ,3
-		  ,"InitializeFn called. Type '%.*s' now useable.\n"
+		  ,"InitializeFn called. Type '%.*s' now useable."
 		  ,Global_ProvidedByModule.typeNameLen
 		  ,Global_ProvidedByModule.typeName);
 

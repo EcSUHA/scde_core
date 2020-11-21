@@ -28,11 +28,14 @@ add_library(${PROJECT_NAME}
 					"GoodReadingName.c"
 					"HexDumpOut.c"
 					"InitSCDERoot.c"
+					"Log.c"
 					"Log3.c"
 					"MakeDeviceName.c"
 					"MakeReadingName.c"
 					"TimeNow.c"
-					"WriteStateFile.c"			
+					"WriteStateFile.c"		
+					
+					"unsorted.c"							
 )
 
 target_include_directories(${PROJECT_NAME} 
