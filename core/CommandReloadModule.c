@@ -4,6 +4,10 @@
 #include <esp8266.h>
 #endif
 
+#if defined(LINUX_PLATFORM)
+#include <dlfcn.h>
+#endif
+
 #include <stddef.h>
 #include <stdint.h>
 #include <time.h>
@@ -25,10 +29,10 @@
 
 
 
-#include <dlfcn.h>
 
 
-#define LIBEQUAL "MusterModul.so"
+
+//
 
 /* dynamische Bibliothek laden */
 /*
@@ -79,8 +83,7 @@ my_close_func (void *handle)
   if (dlclose (handle))
 	printf ("Fehler bei dlclose(): %s\n", dlerror ());
 }
-*
-/
+*/
 
 //http://stackoverflow.com/questions/17081131/how-to-call-a-function-in-the-main-program-from-a-dynamically-loaded-shared-libr
 
@@ -123,14 +126,16 @@ CommandReloadModule(const String_t type_name)
 #if defined(ESP_PLATFORM)
 
   #if CORE_SCDE_DBG >= 1
-  Log("CommandReloadModule",1,"Error!, platform has no support for loading Type-Name '%.*s'."
+  Log("CommandReloadModule",1,"Error!, platform has no support for loading Type-Name '%.*s'. It should be linked into image by the maker."
  	,type_name.len
 	,type_name.p_char);
   #endif
     
-  return NewModule;
+  return NULL;
   
-#else// LINUX_PLATFORM
+#endif
+   
+#if defined(LINUX_PLATFORM)// LINUX_PLATFORM
 
   // build lib.so filename
   char *file_name;
