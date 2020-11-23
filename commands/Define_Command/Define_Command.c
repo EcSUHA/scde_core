@@ -66,10 +66,10 @@ static SCDEFn_t* p_SCDEFn;
 
 // Command Help
 const uint8_t Define_helpText[] = 
-  "Usage: Define <definition-name> <module-name> <type dependent arguments>, to define a device";
+  "Usage: Define <definition-name> <type-name> <type dependent arguments>, to create an definition of that type.";
 // CommandHelp (detailed)
 const uint8_t Define_helpDetailText[] = 
-  "Usagebwrebwerb: Define <name> <type> <options>, to Define a device";
+  "Usage: Define <definition-name> <type-name> <type dependent arguments>, to define a device";
 
 
 ProvidedByCommand_t Define_ProvidedByCommand = {
@@ -221,7 +221,7 @@ Define_CommandFn (const uint8_t* p_args,
 
 	// response with error text
 	p_retMsg->strTextLen = asprintf(&p_retMsg->strText,
-		"Could not interpret command '%.*s'! Usage: Define <definition-name> <module-name> <type dependent arguments>",
+		"Could not interpret arguments '%.*s'! Usage: Define <definition-name> <type-name> <type dependent arguments>",
 		args_len, p_args);
 
 	// insert retMsg in stail-queue
@@ -249,20 +249,45 @@ Define_CommandFn (const uint8_t* p_args,
 
    // get the module ptr by name
    Module_t* p_module = p_SCDEFn->GetLoadedModulePtrByNameFn(p_module_name,
- 	module_name_len);
+ 	 module_name_len);
 
-  // do we need to reload Module?
+  // do we got the module? Else try to load it
   if (!p_module) {
-  
-    String_t type_name;					// conversion to new !
-    type_name.len = module_name_len;
-    type_name.p_char = p_module_name;
-    
-	p_module = p_SCDEFn->CommandReloadModuleFn(type_name);
+
+    // for reloadmodule command
+	String_t reloadmodule_cmd;
+
+  	// build reloadmodule command
+	reloadmodule_cmd.len = asprintf(&reloadmodule_cmd.p_char,
+		"reloadmodule %.*s",
+		(int) module_name_len,
+		p_module_name);
+		
+	// now execute the reloadmodule command
+	struct headRetMsgMultiple_s headRetMsgMultipleFromFn =
+	  p_SCDEFn->AnalyzeCommandFn(reloadmodule_cmd.p_char,
+			reloadmodule_cmd.len);
+
+	// free build
+	free(reloadmodule_cmd.p_char);
+
+	// ret-msg ? = error !
+    if (!STAILQ_EMPTY(&headRetMsgMultipleFromFn)) {
+
+ 	  // add the retMsg entrys
+	  STAILQ_CONCAT(&headRetMsgMultiple, &headRetMsgMultipleFromFn);
+
+	  // return STAILQ head, stores multiple retMsg, if NULL -> no retMsg-entries
+	  return headRetMsgMultiple;
+    }
   }
 
+   // retry - get the module ptr by name
+   p_module = p_SCDEFn->GetLoadedModulePtrByNameFn(p_module_name,
+ 	 module_name_len);
+
   // still no Module -> we don't have it, error!
-  if (!p_module) {
+  if (!p_module) {					// normally can not reach this point !!!!!!! exept when module n.o.k.
 
 	// alloc mem for retMsg
 	strTextMultiple_t* p_retMsg =
@@ -270,7 +295,7 @@ Define_CommandFn (const uint8_t* p_args,
 
 	// response with error text
 	p_retMsg->strTextLen = asprintf(&p_retMsg->strText,
-		"Error ! Could not load Module-Type '%.*s'.",
+		"Error! Could not load Module-Type '%.*s'.",
 		module_name_len,
 		p_module_name);
 
@@ -292,7 +317,7 @@ Define_CommandFn (const uint8_t* p_args,
 
 	// response with error text
 	p_retMsg->strTextLen = asprintf(&p_retMsg->strText,
-		"An Definition called '%.*s' is already in use!",
+		"Error! An Definition called '%.*s' is already in use.",
 		definition_name_len,
 		p_definition_name);
 
