@@ -18,17 +18,20 @@
  */ 
  
 // renamed during work
-#define Common_Definition_s  Entry_Definition_s
-#define Common_Definition_t  Entry_Definition_t
+
+//        alt                      neu
+#define Common_Definition_s    Entry_Definition_s
+#define Common_Definition_t    Entry_Definition_t
 #define HeadCommon_Definitions head_definition
 
-
-#define Command_s  Entry_Command_s
-#define Command_t  Entry_Command_t
+//        alt            neu
+#define Command_s    Entry_Command_s
+#define Command_t    Entry_Command_t
 #define headCommands head_command
 
-#define Module_s  Entry_Module_s
-#define Module_t  Entry_Module_t
+//        alt        neu
+#define Module_s    Entry_Module_s
+#define Module_t    Entry_Module_t
 #define HeadModules head_module
 
 //#define ESP32_SwITCH_Definition_s  Entry_ESP32_SwITCH_Definition_s
@@ -49,6 +52,7 @@ typedef struct SCDERoot_s SCDERoot_t;
 
 // Module (type) stores information of loaded modules, required for module use and operation
 typedef struct Module_s Module_t;
+//typedef struct Entry_Module_s Entry_Module_t;
 
 // Provided by Module (type) stores (the common) function callbacks for SCDE module operation
 typedef struct ProvidedByModule_s ProvidedByModule_t;
@@ -601,7 +605,7 @@ struct ProvidedByModule_s {
 
 
 /*
- * Module (struct)
+ * Entry_Module (struct)
  * - stores information of loaded modules, required for module use and operation
  * - data is associated when module is loaded
  * - done in InitializeFn (after module load)
@@ -879,27 +883,27 @@ typedef struct ProvidedByCommand_s ProvidedByCommand_t;
  * - (done in InitializeFn after command load)
  */
 struct ProvidedByCommand_s {
-
-// strText_t nameString; NEU name_string		// name text of command
-  uint8_t commandNameText[32];	//command_name_text		// name text of command
-  size_t commandNameTextLen; //command_name_text_len
+  uint8_t commandNameText[32];					//command_name_char		// name of command
+  size_t commandNameTextLen; 					//command_name_len
 
   InitializeCommandFn_t InitializeCommandFn;	// returns module information (module_s)
-  CommandFn_t CommandFn;			// the command Fn
-  const String_t helpString; 	//help_string	// help text
+  CommandFn_t CommandFn;						// the command Fn
+  const String_t helpString; 					//help_string	// help text
   const String_t helpDetailString; //help_detail_string	// detailed help text
 };
 
 //--------------------------------------------------------------------------------------------------
 
 /* 
- * Entry_Commands (struct)
+ * Entry_Command
  * - stores commands made available for operation.
  * - some are buildin and initialized after start, others are loaded by user
  */
 struct Entry_Command_s {
   STAILQ_ENTRY (Entry_Command_s) entries;		// link to next loaded command
-  ProvidedByCommand_t* provided; // p_provided		// ptr to provided-by-command Info
+  ProvidedByCommand_t* provided; // p_provided	// ptr to provided-by-command Info
+  void* lib_handle;								// Handle to this loaded Module
+
 };
 
 

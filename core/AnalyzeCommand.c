@@ -22,127 +22,156 @@
 /* --------------------------------------------------------------------------------------------------
  *  FName: AnalyzeCommand
  *  Desc: Seeks command and commandArgs from given args and calls the commandFn from an matching 
- *        module name (if loaded / available)
- *  Info: 
- *  Para: const uint8_t *args  -> ptr to space seperated "command args" text
- *        const size_t argsLen -> length of command and args
- *  Rets: struct headRetMsgMultiple_s -> head from STAILQ, stores multiple RetMsg (errors), NULL=OK/None
+ *        command-name (if loaded / available)
+ *  Info: executes reloadcommand if command is not found
+ *  Para: const String_t args  -> space seperated "command args" text
+ *  Rets: struct Head_String_s -> head from STAILQ, stores multiple RetMsg (errors), NULL=OK/None
  * --------------------------------------------------------------------------------------------------
  */
-struct headRetMsgMultiple_s
-AnalyzeCommand(const uint8_t *args
-		, const size_t argsLen)
+struct Head_String_s
+AnalyzeCommand(const String_t args)
 {
-/*	Log3("core",16,"Fn AnalyzeCommand called with args '%.*s'"
-	,args
-	,argsLen);*/
 
-  // prepare STAILQ head for multiple RetMsg storage
-  struct headRetMsgMultiple_s headRetMsgMultiple;
+  #if CORE_SCDE_DBG >= 7
+  Log("AnalyzeCommand",7,"Fn analyzing cmd '%.*s'."
+ 	,args.len
+	,args.p_char);
+  #endif
 
-  // initialize the queue
-  STAILQ_INIT(&headRetMsgMultiple);
+// --------------------------------------------------------------------------------------------------
 
-  // set start of possible Command
-  const uint8_t *commandName = args;
+  // prepare STAILQ head to store multiple 'ret_msg' elements
+  struct Head_String_s head_ret_msg;
 
-  // set start of possible Command-Arguments
-  const uint8_t *commandArgs = args;
+  // Initialize the queue
+  STAILQ_INIT(&head_ret_msg);
 
-  // a seek-counter
+// --------------------------------------------------------------------------------------------------
+
+  // expected argument #1
+  String_t cmd_name;
+
+  // set * to start of possible command-name text (seek-start-pos)
+  cmd_name.p_char = args.p_char;
+
+  // the total seek-counter
   int i = 0;
+  
+  // an element seek-counter
+  int j = 0;
+  
+  // seek * to start of command-name text ('\32' after space)
+  while( ( i < args.len ) && ( *cmd_name.p_char == ' ' ) ) { i++ ; cmd_name.p_char++ ; }
 
-  // seek to next space !'\32'
-  while( (i < argsLen) && (*commandArgs != ' ') ) {i++;commandArgs++;}
+  // 1 @ finnished
 
-  // length of command
-  size_t commandLen = i;
+  // expected argument #2
+  String_t cmd_args;
 
-  // seek to start position of Command-Arguments '\32'
-  while( (i < argsLen) && (*commandArgs == ' ') ) {i++;commandArgs++;}
+  // set * to start of possible command-args text (seek-start-pos)
+  cmd_args.p_char = cmd_name.p_char;
 
-  // length of Command-Arguments
-  size_t commandArgsLen = argsLen - i;
+  // seek to next space '\32'
+  while( ( i < args.len ) && ( *cmd_args.p_char != ' ' ) ) { i++, j++ ; cmd_args.p_char++ ; }
 
- // veryfy lengths > 0, definition 0 allowed
-//  if ( (commandLen) == 0 || (commandArgsLen == 0) ) {
-  if (commandLen == 0 ) {
+  // length of command-name text determined
+  cmd_name.len = j;
 
-	// alloc mem for retMsg
-	strTextMultiple_t *retMsg =
-		 malloc(sizeof(strTextMultiple_t));
+  // seek * to start of command-args text ('\32' after space)
+  while( ( i < args.len ) && ( *cmd_args.p_char == ' ' ) ) { i++ ; cmd_args.p_char++ ; }
 
-	// fill retMsg with error text
-	retMsg->strTextLen = asprintf((char**) &retMsg->strText
-		,"Could not interpret input '%.*s' ! Usage: <command> <command dependent arguments>"
-		,(int) argsLen
-		,args);
+ // 2 @ finnished - no further processing of rest !
+  /*
+  // no further arguments expected - searching the end of text
+  String_t end_of_text;
+	
+  // set start * of possible 'end of text' seek-start-pos
+  end_of_text.p_char = cmd_args.p_char;
+	
+  // clear element seek-counter
+  j = 0;
 
-	// insert retMsg in stail-queue
-	STAILQ_INSERT_TAIL(&headRetMsgMultiple, retMsg, entries);
-
-	// return STAILQ head, stores multiple retMsg, if NULL -> no retMsg-entries
-	return headRetMsgMultiple;
-
-	}
-
-  // get the Command by Name
-  Command_t *command;
-
-  // search for the command
-  STAILQ_FOREACH(command, &SCDERoot.headCommands, entries) {
-
-		if ( (command->provided->commandNameTextLen == commandLen)
-			&& (!strncasecmp((const char*) command->provided->commandNameText, (const char*) commandName, commandLen)) ) {
-
-			// call the CommandFn, if retMsg != NULL -> error ret Msg
-			struct headRetMsgMultiple_s headRetMsgMultipleFromFn
-				= command->provided->CommandFn(commandArgs, commandArgsLen);
-
-			// add the retMsg entrys
-			STAILQ_CONCAT(&headRetMsgMultiple, &headRetMsgMultipleFromFn);
-/*
-			// retMsgMultiple stailq from Fn filled ?
-			if (!STAILQ_EMPTY(&headRetMsgMultipleFromFn)) {
-
-				// for the retMsg elements
-				strTextMultiple_t *retMsg;
-
-				// get the entries till empty
-				while (!STAILQ_EMPTY(&headRetMsgMultipleFromFn)) {
-
-					retMsg = STAILQ_FIRST(&headRetMsgMultipleFromFn);
-
-					// insert retMsg in stail-queue
-					STAILQ_INSERT_TAIL(&headRetMsgMultiple, retMsg, entries);
-
-					// done, remove this entry
-					STAILQ_REMOVE(&headRetMsgMultipleFromFn, retMsg, strTextMultiple_s, entries);
-				}
-			}
+  // seek to next space '\32'
+  while( ( i < args.len ) && ( *end_of_text.p_char != ' ' ) ) { i++ , j++ ; end_of_text.p_char++ ; }
 */
-			// return STAILQ head, it stores multiple RetMsg, if NULL -> no RetMsg-entries
-			return headRetMsgMultiple;
-		}
-	}
+  // length of command-args text determined
+  cmd_args.len = args.len - i ;
+
+  // @ 'p_end_of_text' ! No further processing ...
 
 // -------------------------------------------------------------------------------------------------
 
-  // alloc mem for retMsg
-  strTextMultiple_t *retMsg =
-		malloc(sizeof(strTextMultiple_t));
+  // verify lengths > 0, ! cmd_args = 0 IS ALLOWED!
+  if ( cmd_name.len == 0 ) {
 
-  // fill retMsg with error text
-  retMsg->strTextLen = asprintf((char**) &retMsg->strText
+	// alloc mem for retMsg
+	Entry_String_t* p_entry_ret_msg =
+		 malloc(sizeof(Entry_String_t));
+
+	// response with error text
+	p_entry_ret_msg->string.len = asprintf((char**) &p_entry_ret_msg->string.p_char
+		,"Could not interpret input '%.*s' ! Usage: <command> <command dependent arguments>"
+		,(int) args.len
+		,args.p_char);
+
+	// insert ret_msg as entry in stail-queue
+	STAILQ_INSERT_TAIL(&head_ret_msg, p_entry_ret_msg, entries);
+
+  	// return head of singly linked tail queue, which holds 'ret_msg' elements
+    return 	head_ret_msg;
+  }
+
+// -------------------------------------------------------------------------------------------------
+
+  // get the Command by Name
+  Entry_Command_t *entry_command;
+
+  // search for the command
+  STAILQ_FOREACH(entry_command, &SCDERoot.headCommands, entries) {
+
+	if ( (entry_command->provided->commandNameTextLen == cmd_name.len)
+		&& (!strncasecmp((const char*) entry_command->provided->commandNameText, (const char*) cmd_name.p_char, cmd_name.len)) ) {
+
+		// call the CommandFn, if retMsg != NULL -> error ret Msg
+//		struct Head_String_s head_ret_msg_from_fn =
+		struct headRetMsgMultiple_s headRetMsgMultipleFromFn =
+			entry_command->provided->CommandFn(cmd_args.p_char, cmd_args.len);
+
+// temp conversion start
+  struct Head_String_s head_ret_msg_from_fn;
+  STAILQ_INIT(&head_ret_msg_from_fn);
+  head_ret_msg_from_fn.stqh_first =  headRetMsgMultipleFromFn.stqh_first;
+  head_ret_msg_from_fn.stqh_last =  headRetMsgMultipleFromFn.stqh_last;
+// temp conversion end
+
+		// add the retMsg entrys
+		STAILQ_CONCAT(&head_ret_msg, &head_ret_msg_from_fn);  
+		
+  		// return STAILQ head, it stores multiple RetMsg, if NULL -> no RetMsg-entries
+		return head_ret_msg;
+	}
+  }
+
+// -------------------------------------------------------------------------------------------------
+
+ // alloc mem for retMsg
+  Entry_String_t* p_entry_ret_msg =
+	malloc(sizeof(Entry_String_t));
+
+  // response with error text
+  p_entry_ret_msg->string.len = asprintf(&p_entry_ret_msg->string.p_char
 	,"Unknown command <%.*s> with arguments <%.*s>!"
-	,(int) commandLen
-	,commandName
-	,(int) commandArgsLen
-	,commandArgs);
+	,(int) cmd_name.len
+	,cmd_name.p_char
+	,(int) cmd_args.len
+	,cmd_args.p_char);
 
-  // insert retMsg in stail-queue
-  STAILQ_INSERT_TAIL(&headRetMsgMultiple, retMsg, entries);
+  // insert ret_msg as entry in stail-queue
+  STAILQ_INSERT_TAIL(&head_ret_msg, p_entry_ret_msg, entries);
 
-  // return STAILQ head, stores multiple RetMsg, if NULL -> no RetMsg-entries
-  return headRetMsgMultiple;
+  // return head of singly linked tail queue, which holds 'ret_msg' elements
+  return head_ret_msg;
 }
+
+
+

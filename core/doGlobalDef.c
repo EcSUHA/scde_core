@@ -56,8 +56,18 @@ doGlobalDef(const uint8_t *cfgFileName
 //#define CMD_4_TELNET "define MyTelnet Telnet 23"
 
   // there should be no return messages - we expect no return messages
-  AnalyzeCommand((const uint8_t *) "attr global verbose 3", 21);
-  AnalyzeCommand((const uint8_t *) "attr global logfile -", 21);
+//  AnalyzeCommand((const uint8_t *) "attr global verbose 3", 21);
+//  AnalyzeCommand((const uint8_t *) "attr global logfile -", 21);
+
+  String_t x = { "attr global verbose 3", 21};
+  AnalyzeCommand(x);
+  
+  String_t y = { "attr global logfile -", 21};
+  AnalyzeCommand(y);
+  
+//  AnalyzeCommand( (const uint8_t *) "attr global verbose 3",  21 );
+//  AnalyzeCommand{ (const uint8_t *) "attr global logfile -", 21  );
+
 
   return;
 }	

@@ -48,6 +48,7 @@ attribute_t	SetAttrByDefTextAttrTextValText(strText_t defName, strText_t attrNam
 void //ICACHE_FLASH_ATTR
 InitA()
 {
+printf("Enter0");
 // Zeile 570 , Initialisierung ...
 
   // for building the summary of ret-msg from cfg + state file including (starts empty)
@@ -67,10 +68,10 @@ InitA()
 // -------------------------------------------------------------------------------------------------
 	printf("Enter2");
   // create the args to execute the 'include configfile' command
-  strText_t incCFIncludeCommandArgs;
+  String_t incCFIncludeCommandArgs;
 
-  incCFIncludeCommandArgs.strTextLen =
-	asprintf((char**) &incCFIncludeCommandArgs.strText
+  incCFIncludeCommandArgs.len =
+	asprintf((char**) &incCFIncludeCommandArgs.p_char
 		,"include %.*s"
 		,(int) attrCfgFNValueName->len
 		,(char*) attrCfgFNValueName->p_char);
@@ -78,9 +79,18 @@ InitA()
 	printf("Enter3");
 	
   // call command include to process the initial config-file
-  struct headRetMsgMultiple_s incCFHeadRetMsgMultipleFromFn =
-		AnalyzeCommandChain((uint8_t*)incCFIncludeCommandArgs.strText,
-		(const size_t) incCFIncludeCommandArgs.strTextLen);
+  struct Head_String_s head_ret_msg_from_cf_inc =
+		AnalyzeCommandChain(incCFIncludeCommandArgs);
+
+
+// temp conversion start
+  struct headRetMsgMultiple_s incCFHeadRetMsgMultipleFromFn;
+  STAILQ_INIT(&incCFHeadRetMsgMultipleFromFn);
+  incCFHeadRetMsgMultipleFromFn.stqh_first =  head_ret_msg_from_cf_inc.stqh_first;
+  incCFHeadRetMsgMultipleFromFn.stqh_last =  head_ret_msg_from_cf_inc.stqh_last;
+// temp conversion end
+
+
 
  /* // free value from Fn GetAttrValTextByDefTextAttrText
   if (attrCfgFNValueName) {
@@ -91,7 +101,7 @@ InitA()
 
 	}*/
 
-  free(incCFIncludeCommandArgs.strText);
+  free(incCFIncludeCommandArgs.p_char);
 
 // -------------------------------------------------------------------------------------------------
 
@@ -161,7 +171,7 @@ InitA()
 // -------------------------------------------------------------------------------------------------
 
   // for the args to execute the 'include statefile' command
-  strText_t *incSFIncludeCommandArgs = NULL;
+  String_t *incSFIncludeCommandArgs = NULL;
 
   // attr "statefile" found ?
   if (attrStateFNValueName) {
@@ -171,11 +181,11 @@ InitA()
 
 			// build strText_t for cmd args
 			incSFIncludeCommandArgs =
-				malloc(sizeof(strText_t));
+				malloc(sizeof(String_t));
 
 			// attribute "statefile" complete, use it to build args
-			incSFIncludeCommandArgs->strTextLen =
-				asprintf((char**) &incSFIncludeCommandArgs->strText
+			incSFIncludeCommandArgs->len =
+				asprintf((char**) &incSFIncludeCommandArgs->p_char
 					,"include %.*s"
 					,(int) attrStateFNValueName->len
 					,(char*) attrStateFNValueName->p_char);
@@ -191,22 +201,30 @@ InitA()
 
 		// build strText_t for cmd args
 		incSFIncludeCommandArgs =
-			malloc(sizeof(strText_t));
+			malloc(sizeof(String_t));
 
 		// and fill with cmd-args
-		incSFIncludeCommandArgs->strTextLen =
-			asprintf((char**) &incSFIncludeCommandArgs->strText
+		incSFIncludeCommandArgs->len =
+			asprintf((char**) &incSFIncludeCommandArgs->p_char
 			,"include state.cfg");
   }
 
   // call command include to process the initial state-file
-  struct headRetMsgMultiple_s incSFHeadRetMsgMultipleFromFn =
-		AnalyzeCommandChain((uint8_t*)incSFIncludeCommandArgs->strText
-		,(const size_t) incSFIncludeCommandArgs->strTextLen);
+  struct Head_String_s head_ret_msg_from_sf_inc =
+		AnalyzeCommandChain(*incSFIncludeCommandArgs);
+
+
+// temp conversion start
+  struct headRetMsgMultiple_s incSFHeadRetMsgMultipleFromFn;
+  STAILQ_INIT(&incSFHeadRetMsgMultipleFromFn);
+  incSFHeadRetMsgMultipleFromFn.stqh_first =  head_ret_msg_from_sf_inc.stqh_first;
+  incSFHeadRetMsgMultipleFromFn.stqh_last =  head_ret_msg_from_sf_inc.stqh_last;
+// temp conversion end
+
 
   // free our strText_t that fits the created args
-  if (incSFIncludeCommandArgs->strText) 
-		free(incSFIncludeCommandArgs->strText);
+  if (incSFIncludeCommandArgs->p_char) 
+		free(incSFIncludeCommandArgs->p_char);
   if (incSFIncludeCommandArgs)
 		free(incSFIncludeCommandArgs);
 

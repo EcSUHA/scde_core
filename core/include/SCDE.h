@@ -40,10 +40,12 @@ void InitA();
  */
 
 // analyzes + processes one command row
-struct headRetMsgMultiple_s AnalyzeCommand(const uint8_t *args, const size_t argsLen);
+//struct headRetMsgMultiple_s AnalyzeCommand(const uint8_t *args, const size_t argsLen);
+struct Head_String_s AnalyzeCommand(const String_t args);
 
 // analyzes + processes an configuration file
-struct headRetMsgMultiple_s AnalyzeCommandChain(const uint8_t *args, const size_t argsLen);
+//struct headRetMsgMultiple_s AnalyzeCommandChain(const uint8_t *args, const size_t argsLen);
+struct Head_String_s AnalyzeCommandChain(const String_t args);
 
 //
 int CallGetFnByDefName(const uint8_t *nameText, const size_t nameTextLen, Common_Definition_t *sourceCommon_Definition, void *X);
