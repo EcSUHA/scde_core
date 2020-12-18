@@ -27,10 +27,10 @@ Programmers can provide commands and/or modules for use in Makers IoT-Devices
 IoT Devices setup is stored in the maker.cfg file, IoT Devices state is stored in the state.cfg.
 
 Embedded Commands (SCDE-Core) are
-  * Attr
-  * Define
-  * Delete
-  * Deleteattr
+  * Attr        to assign attributes to the definitions
+  * Define      to define instances of modules
+  * Delete      to delete instances of modules
+  * Deleteattr  to delete attributes assigned to definitions
   * Get
   * Help
   * Include
@@ -42,9 +42,6 @@ Embedded Commands (SCDE-Core) are
   * Set
   * Setstate 
   * Shutdown
-
-Embedded Commands
-  * -/-
   
 Embedded Modules (SCDE-Core) are
   * Global
@@ -58,8 +55,7 @@ Embedded Modules (in Plaform-Templates)
   * ESP32_DeVICE (maintained as Module-Template) (ESP32-Platform)
     
 Additional Commands (on request, according to the license)
-  * Reloadmodule (LINUX-Platform)
-  * Reloadcommand (LINUX-Platform) 
+  * -/- 
 
 Additional Modules (on request, according to the license)
   * -/-
