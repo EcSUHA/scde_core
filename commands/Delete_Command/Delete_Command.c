@@ -1,7 +1,7 @@
 ﻿/* #################################################################################################
  *
  *  Function: Delete Command - for SCDE (Smart Connected Device Engine)
- *            To delete Definitions
+ *            Deletes an Definition (which may be called Device)
  *
  *  ESP 8266EX & ESP32 SOC Activities ...
  *  Copyright by EcSUHA
@@ -36,13 +36,12 @@
 #include "include/Delete_Command.h"
 
 
+// -------------------------------------------------------------------------------------------------
 
 // set default build verbose - if no external override
 #ifndef Delete_Command_DBG  
 #define Delete_Command_DBG  5	// 5 is default
 #endif
-
-
 
 // -------------------------------------------------------------------------------------------------
 
@@ -56,14 +55,13 @@ static SCDEFn_t* p_SCDEFn;
 
 
 
-/* --------------------------------------------------------------------------------------------------
+/* -------------------------------------------------------------------------------------------------
  *  DName: Delete_ProvidedByCommand
  *  Desc: Data 'Provided By Command' for this Command (functions + infos this command provides
  *        to SCDE)
  *  Data: 
- * --------------------------------------------------------------------------------------------------
+ * -------------------------------------------------------------------------------------------------
  */
-
 // Command Help
 const uint8_t Delete_helpText[] = 
   "Usage: Delete <definition-name> [<type dependent arguments>], to delete a device";
@@ -72,18 +70,18 @@ const uint8_t Delete_helpDetailText[] =
   "Usagebwrebwerb: define <name> <type> <options>, to define a device";
 
 ProvidedByCommand_t Delete_ProvidedByCommand = {
-  "Delete",					// Command-Name of command -> libfilename.so !
-  6,						// length of cmd
-  Delete_InitializeCommandFn,			// Initialize Fn
-  Delete_CommandFn,				// the Fn code
+  "Delete",					        // Command-Name of command -> libfilename.so !
+  6,						        // length of cmd
+  Delete_InitializeCommand_Fn,		// Initialize Fn
+  Delete_Command_Fn,				// the Fn code
   { &Delete_helpText, sizeof(Delete_helpText) },
   { &Delete_helpDetailText, sizeof(Delete_helpDetailText) }
 };
 
 
 
-/* --------------------------------------------------------------------------------------------------
- *  FName: Delete - Initialize Command Funktion
+/* -------------------------------------------------------------------------------------------------
+ *  FName: Delete_InitializeCommand_Fn
  *  Desc: Initializion of an (new loaded) SCDE-Command. Init p_SCDERoot and p_SCDE Function Callbacks.
  *  Info: Called only once befor use!
  *  Para: SCDERoot_t* p_SCDERoot_from_core -> ptr to SCDE Data Root from SCDE-Core
@@ -91,7 +89,7 @@ ProvidedByCommand_t Delete_ProvidedByCommand = {
  *--------------------------------------------------------------------------------------------------
  */
 int
-Delete_InitializeCommandFn(SCDERoot_t* p_SCDERoot_from_core)
+Delete_InitializeCommand_Fn(SCDERoot_t* p_SCDERoot_from_core)
 {
   // make data root locally available
   p_SCDERoot = p_SCDERoot_from_core;
@@ -99,270 +97,237 @@ Delete_InitializeCommandFn(SCDERoot_t* p_SCDERoot_from_core)
   // make locally available from data-root: SCDEFn (Functions / callbacks) for faster operation
   p_SCDEFn = p_SCDERoot->SCDEFn;
 
-// --------------------------------------------------------------------------------------------------
+// -------------------------------------------------------------------------------------------------
 
   #if Delete_Command_DBG >= 3
   p_SCDEFn->Log3Fn(Delete_ProvidedByCommand.commandNameText,
-	Delete_ProvidedByCommand.commandNameTextLen,
-	3,
-	"InitializeFn called. Now useable.");
+	  Delete_ProvidedByCommand.commandNameTextLen,
+	  3,
+	  "InitializeFn called. Now useable.");
   #endif
 
-// --------------------------------------------------------------------------------------------------
+// -------------------------------------------------------------------------------------------------
 
   return 0;
 }
 
 
 
-/* --------------------------------------------------------------------------------------------------
- *  FName: Delete - The Command main Fn
+/* -------------------------------------------------------------------------------------------------
+ *  FName: Delete_Command_Fn
  *  Desc: Deletes (undefines) a Definition by calling Modules UndefineFn to do further module-specific
  *        deinitialization. Finally cleans up common values, including the definition.
- *  Info: ret Msg from UndefineFn results in Veto (keep Definition)
- *  Para: const uint8_t* p_args  -> space seperated command args text string "definition_name delete_args"
- *        const size_t args_len -> command args text length
- *  Rets: struct headRetMsgMultiple_s -> STAILQ head of multiple retMsg, if NULL -> no retMsg
- * --------------------------------------------------------------------------------------------------
+ *  Info: 'Definition-Name' is custom Definition name. Allowed: [azAZ09._], uint8_t[32]
+ *        'Definition-Args' is custom, stored in Definition->Definition, and passed to modules DefineFn
+ *        ret Msg from UndefineFn results in Veto (keep Definition)
+ *  Para: const String_t args -> space seperated command args text string,
+ *                               normally "definition_name" // module_name definition_args"
+ *  Rets: struct Head_String_s -> STAILQ head of queue filled with multiple ret_msg, 
+ *                                if NULL -> no ret_msg
+ * -------------------------------------------------------------------------------------------------
  */
-struct headRetMsgMultiple_s
-Delete_CommandFn (const uint8_t* p_args
-		,const size_t args_len)
+struct Head_String_s
+Delete_Command_Fn (const String_t args)
 {
   #if Delete_Command_DBG >= 7
   p_SCDEFn->Log3Fn(Delete_ProvidedByCommand.commandNameText,
-	Delete_ProvidedByCommand.commandNameTextLen,
-	7,
-	"CommandFn called with args '%.*s'",
-	args_len,
-	p_args);
+	  Delete_ProvidedByCommand.commandNameTextLen,
+	  7,
+	  "CommandFn called with args '%.*s'",
+	  args.len,
+	  args.p_char);
   #endif
 
-// --------------------------------------------------------------------------------------------------
+// -------------------------------------------------------------------------------------------------
 
-  // prepare STAILQ head for multiple RetMsg storage
-  struct headRetMsgMultiple_s headRetMsgMultiple;
+  // prepare STAILQ head to store multiple 'ret_msg' elements
+  struct Head_String_s head_ret_msg;
 
-  // initialize the queue
-  STAILQ_INIT(&headRetMsgMultiple);
+  // Initialize the queue
+  STAILQ_INIT(&head_ret_msg);
 
-// --------------------------------------------------------------------------------------------------
-	
-  // set * to start of possible definition-name text (seek-start-pos)
-  const uint8_t* p_definition_name = p_args;
+// -------------------------------------------------------------------------------------------------
 
   // the total seek-counter
   int i = 0;
-	
-  // seek * to start of  definition-name text ('\32' after space)
-  while( ( i < args_len ) && ( *p_definition_name == ' ' ) ) { i++ ; p_definition_name++ ; }
 
-  // @1
+  // expected argument #1
+  String_t definition_name;
 
-  // set * to start of possible delete-args text (seek-start-pos)
-  const uint8_t* p_delete_args = p_definition_name;
-
+  // set * to start of possible 'definition_name' text (seek-start-pos)
+  definition_name.p_char = args.p_char;
+  
   // an element seek-counter
   int j = 0;
+  
+  // seek * to start of 'definition_name' text (skip '\32' -> space)
+  while( ( i < args.len ) && ( *definition_name.p_char == ' ' ) ) { i++ ; definition_name.p_char++ ; }
 
-  // seek to next space '\32'
-  while( ( i < args_len ) && ( *p_delete_args != ' ' ) ) { i++, j++ ; p_delete_args++ ; }
+  // expected argument #2
+  String_t opt_args;
 
-  // length of definition-name text determined
-  size_t definition_name_len = j;
+  // take * to start searching 'opt_args' text (seek-start-pos)
+  opt_args.p_char = definition_name.p_char;
 
-  // seek * to start of delete-args text ('\32' after space)
-  while( ( i < args_len ) && ( *p_delete_args == ' ' ) ) { i++ ; p_delete_args++ ; }
-
-  // @2
-	
-  // set start * of possible 'end of text' seek-start-pos
-  const uint8_t* p_end_of_text = p_delete_args;
-	
   // clear element seek-counter
   j = 0;
 
-  // seek to next space '\32'
-  while( ( i < args_len ) && ( *p_end_of_text != ' ' ) ) { i++ , j++ ; p_end_of_text++ ; }
+  // seek * to end of previous args text (to next '\32' -> space)
+  while( ( i < args.len ) && ( *opt_args.p_char != ' ' ) ) { i++ , j++ ; opt_args.p_char++ ; }
 
-  // length of attr-Val text determined
-  size_t delete_args_len = j;
+  // length of 'module_name' text determined
+  definition_name.len = j;
 
-  // @ 'p_end_of_text' ! No further processing ...
+  // seek * to start of 'opt_args' (skip '\32' -> space)
+  while( ( i < args.len ) && ( *opt_args.p_char == ' ' ) ) { i++ ; opt_args.p_char++ ; }
+  
+  // length of 'opt_args' text determined (its the rest)
+  opt_args.len = args.len - i;
 
-// --------------------------------------------------------------------------------------------------
+// -------------------------------------------------------------------------------------------------
 
-  // veryfy lengths > 0
-  if ( definition_name_len == 0 ) {
+  // verify lengths > 0, ! opt_args.len = 0 IS ALLOWED !
+  if ( definition_name.len == 0 ) {
 
-	// alloc mem for retMsg
-	strTextMultiple_t *p_retMsg =
-		 malloc(sizeof(strTextMultiple_t));
+	  // alloc mem for ret_msg entry
+	  Entry_String_t* p_entry_ret_msg =
+		 malloc(sizeof(Entry_String_t));
 
-	// response with error text
-	p_retMsg->strTextLen = asprintf(&p_retMsg->strText
-		,"Error! Could not interpret delete command arguments '%.*s'! Usage: delete <definition-name> [<type dependent arguments>]"
-		,args_len
-		,p_args);
+	  // response with error text
+	  p_entry_ret_msg->string.len = asprintf(&p_entry_ret_msg->string.p_char,
+		  "Error! Could not interpret '%.*s'! Usage: Define <definition-name> [<type dependent arguments>]",
+		  args.len,
+		  (char *)args.p_char);
 
-	// insert retMsg in stail-queue
-	STAILQ_INSERT_TAIL(&headRetMsgMultiple, p_retMsg, entries);
+	  // insert ret_msg entry in stail-queue
+	  STAILQ_INSERT_TAIL(&head_ret_msg, p_entry_ret_msg, entries);
 
-	// return STAILQ head, stores multiple retMsg
-	return headRetMsgMultiple;
+  	  // return head of singly linked tail queue, which holds 'ret_msg' elements
+      return head_ret_msg;
   }
 
-// --------------------------------------------------------------------------------------------------
+// -------------------------------------------------------------------------------------------------
 
-/* delete_args are optional !!!! only pass through
-  // veryfy lengths > 0
-  if (delete_args_len != 0) {
-
-	// alloc mem for retMsg
-	strTextMultiple_t* p_retMsg =
-		 malloc(sizeof(strTextMultiple_t));
-
-	// response with error text
-	p_retMsg->strTextLen = asprintf(&p_retMsg->strText,
-		"Error! Could not interprete additional arguments '%.*s'!",
-	   	delete_args_len,
-		p_delete_args);
-
-	// insert retMsg in stail-queue
-	STAILQ_INSERT_TAIL(&headRetMsgMultiple, p_retMsg, entries);
-
-	// return STAILQ head, stores multiple retMsg
-	return headRetMsgMultiple;
-  }*/
-
-// --------------------------------------------------------------------------------------------------
-
-  // get the Common Definition by Name
-  Common_Definition_t* p_common_definition =
+  // get the Entry Common Definition by Name
+  Entry_Common_Definition_t* p_entry_common_definition =
 	STAILQ_FIRST(&p_SCDERoot->HeadCommon_Definitions);
 
   while (1) {
 
-	// end of stored Definitions? Response with error -> name not found
-	if (p_common_definition == NULL) {
+	// end of stored definition entries? Response with error -> name not found
+	if (p_entry_common_definition == NULL) {
 
-		// alloc mem for retMsg
-		strTextMultiple_t *p_retMsg =
-			malloc(sizeof(strTextMultiple_t));
+	  // alloc mem for ret_msg entry
+	  Entry_String_t* p_entry_ret_msg =
+		 malloc(sizeof(Entry_String_t));
 
-		// response with error text
-		p_retMsg->strTextLen = asprintf(&p_retMsg->strText,
-			"Error! Could not find '%.*s' for command execution!",
-			definition_name_len, p_definition_name);
+	  // response with error text
+	  p_entry_ret_msg->string.len = asprintf(&p_entry_ret_msg->string.p_char,
+		  "Error! Could not find definition '%.*s'.",
+		  args.len,
+		  (char *)args.p_char);
 
-		// insert retMsg in stail-queue
-		STAILQ_INSERT_TAIL(&headRetMsgMultiple, p_retMsg, entries);
+	  // insert ret_msg entry in stail-queue
+	  STAILQ_INSERT_TAIL(&head_ret_msg, p_entry_ret_msg, entries);
 
-		// return STAILQ head, stores multiple retMsg
-		return headRetMsgMultiple;
-	}
+  	  // return head of singly linked tail queue, which holds 'ret_msg' elements
+      return head_ret_msg;
+  }
 
-	// matching Definition Name ? -> break loop
-	if ( (p_common_definition->nameLen == definition_name_len)
-		&& (!strncasecmp((const char*) p_common_definition->name, (const char*) p_definition_name, definition_name_len)) ) {
+	// entry with matching Definition Name ? -> break loop
+	if ( (p_entry_common_definition->nname.len == definition_name.len)
+		&& (!strncasecmp((const char *)p_entry_common_definition->nname.p_char,
+		     (const char *)definition_name.p_char, definition_name.len)) ) {
 
 		// found, break and keep prt
 		break;
-
 	}
 
 	// get next Common_Definition for processing
-	p_common_definition = STAILQ_NEXT(p_common_definition, entries);
+	p_entry_common_definition = STAILQ_NEXT(p_entry_common_definition, entries);
   }
 
-// --------------------------------------------------------------------------------------------------
+// -------------------------------------------------------------------------------------------------
 
-  // Execute UndefineFn 
-  if (p_common_definition->module->provided->UndefineFn) {
+  // UndefineFn NOT assigned by module ? 
+  if (!p_entry_common_definition->module->provided->Undefine_Fn) {
 
-	// execute UndefineFn and get error msg
-	strTextMultiple_t* p_retMsg =
-		p_common_definition->module->provided->UndefineFn(p_common_definition);
-
-	// got an error msg? -> VETO, cancel delete, return with error msg!
-	if (p_retMsg) {
-
-		// insert retMsg in stail-queue
-		STAILQ_INSERT_TAIL(&headRetMsgMultiple, p_retMsg, entries);
-
-		// return STAILQ head, stores multiple retMsg, if NULL -> no retMsg-entries
- 		return headRetMsgMultiple;
-	}
+	  // it is allowed to have no Undefine Fn !?
   }
-
-  // or error msg if this type (Module) is not capable to undefine
+  
+  // Call UndefineFn assigned by module -> ret_msg forces VETO! (keep) 
   else	{
+ 
+ 	  #if Delete_Command_DBG >= 7
+	  p_SCDEFn->Log3Fn(Delete_ProvidedByCommand.commandNameText,
+		  Delete_ProvidedByCommand.commandNameTextLen,
+		  7,
+		  "Calling DeleteFn of Module '%.*s' to delete definition '%.*s' "
+		  "with arguments '%.*s'.",
+		  p_entry_common_definition->module->provided->typeNameLen,
+		  p_entry_common_definition->module->provided->typeName,
+		  p_entry_common_definition->nameLen,
+		  p_entry_common_definition->name,
+		  opt_args.len,
+      	  opt_args.p_char);
+	  #endif
 
-	// response with error -> Type doesnt support undefine Fn
+	  // call Modules Undefine Fn, and get ret msg. Interpret NULL as veto !
+	  Entry_String_t* p_entry_ret_msg =
+		  p_entry_common_definition->module->provided->Undefine_Fn(p_entry_common_definition); //, opt_args);
 
-	// alloc mem for retMsg
-	strTextMultiple_t* p_retMsg =
-		malloc(sizeof(strTextMultiple_t));
+	  // got an error msg? -> VETO, cancel delete, return with error msg!
+	  if (p_entry_ret_msg) {
 
-	// response with error text
-	p_retMsg->strTextLen = asprintf(&p_retMsg->strText,
-		"Error! Could not execute UNDEFINE command on '%.*s', because a TYPE '%.*s' does not support it!",
-		p_common_definition->nameLen,
-		p_common_definition->name,
-		p_common_definition->module->provided->typeNameLen,
-		p_common_definition->module->provided->typeName);
-
-	// insert retMsg in stail-queue
-	STAILQ_INSERT_TAIL(&headRetMsgMultiple, p_retMsg, entries);
-
-	#if Delete_Command_DBG >= 7
-	p_SCDEFn->Log3Fn(Delete_ProvidedByCommand.commandNameText,
-		Delete_ProvidedByCommand.commandNameTextLen,
-		7,
-		"An veto occured while deleting an Definition with args '%.*s'. Check logged msg.",
-		args_len,
-		p_args);
-	#endif
-
-	// return STAILQ head, stores multiple retMsg, if NULL -> no retMsg-entries
- 	return headRetMsgMultiple;
+	      // insert ret_msg entrys in stail-queue
+	      STAILQ_INSERT_TAIL(&head_ret_msg, p_entry_ret_msg, entries);
+		  
+         goto veto;
+	  }
   }
 
-// --------------------------------------------------------------------------------------------------
+// -------------------------------------------------------------------------------------------------
 
-
-//TAILQ_REMOVE(STAILQ_HEAD *head, TYPE *elm, TYPE, STAILQ_ENTRY NAME);
-
-  // remove the Definition from SCDE-Root
+  // remove the definition from SCDE-Root
   STAILQ_REMOVE(&p_SCDERoot->HeadCommon_Definitions,
-	p_common_definition, Common_Definition_s, entries);
+	  p_entry_common_definition, Common_Definition_s, entries);
 
   // now do the common cleanup
 
   // free the initial state '???' - may be NULL now!
-  if (p_common_definition->state) free(p_common_definition->state);
+  if (p_entry_common_definition->state) free(p_entry_common_definition->state);
 
   // check for Readings here, and free if any
-  // xxx
+  // !!! to do
 
-  // Attributes ??
+  // check for Attributes here, and free if any
+  // !!! to do
 
-  // free the Definition string - may be NULL now!
-  if (p_common_definition->definition) free(p_common_definition->definition);
+  // free the 'definition' string - may be NULL!
+  if (p_entry_common_definition->def.p_char) free(p_entry_common_definition->def.p_char);
 
-  // free the custom Name - can NOT be NULL now!
-  free(p_common_definition->name);
+  // free the custom 'name' - is NOT NULL!
+  free(p_entry_common_definition->nname.p_char);
 
-   // delete the semaphore for definition access - is ALWAYS there !
-//   vSemaphoreDelete(p_common_definition->def_mux);
+  // delete the semaphore for definition access - is ALWAYS there !
+  // vSemaphoreDelete(p_entry_common_definition->def_mux);
 
   // finally free the Definition
-  free(p_common_definition);
+  free(p_entry_common_definition);
 
-// --------------------------------------------------------------------------------------------------
+// -------------------------------------------------------------------------------------------------
 
-  // return STAILQ head, stores multiple retMsg
-  return headRetMsgMultiple;
+  // return STAILQ head, stores multiple ret_msg, if NULL -> no ret_msg-entries
+  return head_ret_msg;
+  
+// -------------------------------------------------------------------------------------------------
+
+veto:
+
+  // An veto occured! Cancel the Definition-Deletion! We have a ret_msg entry in the STAILQ
+
+  // return head of singly linked tail queue, which holds 'ret_msg' elements
+  return head_ret_msg;
 }
 
 

@@ -9,7 +9,7 @@
 // include the forward declarations of SCDE-Core components
 #include "argparse_s_fwd.h"
 
-
+#define SCDE_OK  NULL
 
 // -------------------------------------------------------------------------------------------------
 
@@ -20,8 +20,12 @@
 // renamed during work
 
 //        alt                      neu
-#define Common_Definition_s    Entry_Definition_s
-#define Common_Definition_t    Entry_Definition_t
+#define Entry_Definition_s     Entry_Common_Definition_s
+#define Common_Definition_s    Entry_Common_Definition_s
+
+#define Common_Definition_t    Entry_Common_Definition_t
+#define Entry_Definition_t     Entry_Common_Definition_t
+
 #define HeadCommon_Definitions head_definition
 
 //        alt            neu
@@ -34,6 +38,11 @@
 #define Module_t    Entry_Module_t
 #define HeadModules head_module
 
+//        alt        neu
+#define ProvidedByModule_s Provided_By_Module_s
+#define ProvidedByModule_t Provided_By_Module_t
+
+
 //#define ESP32_SwITCH_Definition_s  Entry_ESP32_SwITCH_Definition_s
 //#define ESP32_SwITCH_Definition_t  Entry_ESP32_SwITCH_Definition_t
 
@@ -44,41 +53,31 @@
  * SCDE forward declarations
  */ 
 
-// nach unten verschieben ? doppelt ?
-typedef struct Common_Definition_s Common_Definition_t;
+// String (type) holds an text string with given length
+typedef struct String_s String_t;
+
+// Entry String (type) holds an text string with given length (as entry for singly linked tail queue)
+typedef struct Entry_String_s Entry_String_t;
 
 // SCDE Root (type) holds the Smart Connected Devices Engine - root data
 typedef struct SCDERoot_s SCDERoot_t;
 
 // Module (type) stores information of loaded modules, required for module use and operation
-typedef struct Module_s Module_t;
-//typedef struct Entry_Module_s Entry_Module_t;
+typedef struct Entry_Module_s Entry_Module_t;
 
 // Provided by Module (type) stores (the common) function callbacks for SCDE module operation
-typedef struct ProvidedByModule_s ProvidedByModule_t;
+typedef struct Provided_By_Module_s Provided_By_Module_t;
 
-// Command (type) stores commands made available for operation.
+// Entry Command (type) stores commands made available for operation.
 typedef struct Entry_Command_s Entry_Command_t;
 
-// Common_Definition_t stores values (the common part) for operation of an definition
-//typedef struct Common_Definition_s Common_Definition_t;
-typedef struct Entry_Definition_s Entry_Definition_t;
+// Entry_Common_Definition_t stores values (the common part) for operation of an definition
+typedef struct Entry_Common_Definition_s Entry_Common_Definition_t;
 
 // ?
 typedef struct Common_StageXCHG_s Common_StageXCHG_t;
 
 // -------------------------------------------------------------------------------------------------
-
-
-
-// String_t holds an string with given length. 
-// - the String is NOT zero terminated.
-// - the characters are stored at ptr in allocated memory
-// - do NOT forget to free rhe memory
-typedef struct String_s String_t;
-
-// Entry_String_t holds an entryto hold multiple String_t strings (in an singly linked tail queue)
-typedef struct Entry_String_s Entry_String_t;
 
 
 
@@ -110,11 +109,6 @@ typedef struct Entry_String_s Entry_String_t;
  */
 
 
-// String_t holds an string with given length. 
-// - the String is NOT zero terminated.
-// - the characters are stored at ptr in allocated memory
-// - do NOT forget to free rhe memory
-//typedef struct String_s String_t;
 
 /*
  * String_s (struct)
@@ -199,7 +193,7 @@ STAILQ_HEAD(headRetMsgMultiple_s, strTextMultiple_s);
 // Commands A-Z - will be removed loaded!!
 //typedef char* (* CommandDefineFn_t) (const uint8_t *args, const size_t argsLen);
 //typedef char* (* CommandSetFn_t) (const uint8_t *args, const size_t argsLen);
-typedef strTextMultiple_t* (* CommandUndefineFn_t) (const uint8_t *args, const size_t argsLen);
+//typedef strTextMultiple_t* (* CommandUndefineFn_t) (const uint8_t *args, const size_t argsLen);
 
 
 
@@ -271,7 +265,7 @@ typedef struct headRetMsgMultiple_s (*AnalyzeCommandFn_t) (const uint8_t *args, 
 typedef struct headRetMsgMultiple_s (*AnalyzeCommandChainFn_t) (const uint8_t *args, const size_t argsLen);
 
 // typedef for Call GetFn by Def-Name - for 2 stage desings, requests data
-typedef int (* CallGetFnByDefNameFn_t) (const uint8_t *nameText, const size_t nameTextLen, Common_Definition_t *sourceCommon_Definition, void *X);
+typedef int (* CallGetFnByDefNameFn_t) (const uint8_t *nameText, const size_t nameTextLen, Entry_Common_Definition_t *sourceCommon_Definition, void *X);
 
 // typedef for CommandReloadModule - Initially loads or executes a reload of an Module of given type-name
 typedef Module_t* (*CommandReloadModuleFn_t)(const String_t type_name);
@@ -287,13 +281,13 @@ typedef strText_t (*FmtDateTimeFn_t) (time_t time);
 typedef strText_t (*FmtTimeFn_t) (time_t time);
 
 // typedef for Call Get All Readings Fn by Def-Name
-typedef struct headRetMsgMultiple_s (*GetAllReadingsFn_t) (Common_Definition_t *Common_Definition);
+typedef struct headRetMsgMultiple_s (*GetAllReadingsFn_t) (Entry_Common_Definition_t *Common_Definition);
 
 // typedef for Call Get Definition and Attributes setup lines Fn by Def-Name
-typedef struct headRetMsgMultiple_s (*GetDefAndAttrFn_t) (Common_Definition_t *Common_Definition);
+typedef struct headRetMsgMultiple_s (*GetDefAndAttrFn_t) (Entry_Common_Definition_t *Common_Definition);
 
 //
-typedef Common_Definition_t* (*GetDefinitionPtrByNameFn_t) (const size_t definitionNameLen, const uint8_t *definitionName);
+typedef Entry_Common_Definition_t* (*GetDefinitionPtrByNameFn_t) (const size_t definitionNameLen, const uint8_t *definitionName);
 
 // Returns a STAILQ head that stores entries of all 'dev_spec' matching definitions
 typedef struct Head_Definitions_s (*Get_Definitions_That_Match_DefSpec_String_Fn_t) (const String_t dev_spec);
@@ -333,16 +327,16 @@ typedef void (*MakeDeviceNameFn_t) (const String_t nameString);
 typedef void (*MakeReadingNameFn_t) (const String_t nameString);
 
 // typedef for readingsBeginUpdateFn - call this before updating readings
-typedef int (*readingsBeginUpdateFn_t) (Common_Definition_t *Common_Definition);
+typedef int (*readingsBeginUpdateFn_t) (Entry_Common_Definition_t *Common_Definition);
 
 // typedef for readingsBulkUpdateFn - call this for every reading (bulk-update)
-typedef int (*readingsBulkUpdateFn_t) (Common_Definition_t *Common_Definition, uint8_t *readingNameText, size_t readingNameTextLen, uint8_t *readingValueText, size_t readingValueTextLen);
+typedef int (*readingsBulkUpdateFn_t) (Entry_Common_Definition_t *Common_Definition, uint8_t *readingNameText, size_t readingNameTextLen, uint8_t *readingValueText, size_t readingValueTextLen);
 
 // call this to add an Reading to the running update of Readings
-typedef int (*readingsBulkUpdate2Fn_t) (Common_Definition_t *Common_Definition, const size_t readingNameStringLength, const uint8_t *readingNameStringCharacters, const size_t readingValueStringLengthconst, const uint8_t *readingValueStringCharacters, const bool changed);
+typedef int (*readingsBulkUpdate2Fn_t) (Entry_Common_Definition_t *Common_Definition, const size_t readingNameStringLength, const uint8_t *readingNameStringCharacters, const size_t readingValueStringLengthconst, const uint8_t *readingValueStringCharacters, const bool changed);
 
 // typedef for readingsEndUpdateFn - call this to after bulk-update to process readings
-typedef int (*readingsEndUpdateFn_t) (Common_Definition_t *Common_Definition, bool doTrigger);
+typedef int (*readingsEndUpdateFn_t) (Entry_Common_Definition_t *Common_Definition, bool doTrigger);
 
 // typedef for TimeNowFn - returns current time stamp
 typedef time_t (*TimeNowFn_t) ();
@@ -428,7 +422,6 @@ typedef struct SCDEFn_s {
 // added Fn (Perl -> C)
   Get_Attr_Val_By_Def_Name_And_Attr_Name_Fn_t Get_Attr_Val_By_Def_Name_And_Attr_Name_Fn;
 // not final
-  CommandUndefineFn_t CommandUndefineFn;                   //
   ParseKVInputArgsFn_t ParseKVInputArgsFn;                 // parses Key=Value(@) input arguments into array
 } SCDEFn_t;
 
@@ -488,79 +481,79 @@ typedef struct SCDEFn_s {
 
 
 // typedef for AddFn - experimental - provided my module
-typedef strTextMultiple_t* (* AddFn_t)(Common_Definition_t *Common_Definition, uint8_t *kvArgs, size_t kvArgsLen);
+typedef strTextMultiple_t* (*AddFn_t)(Entry_Common_Definition_t *p_entry_common_definition, uint8_t *kvArgs, size_t kvArgsLen);
 
 // typedef for Attribute Fn - called in case of attribute changes for this definition, to check them
-typedef Entry_String_t* (*Attribute_Fn_t)(Common_Definition_t* p_entry_definition, const String_t attr_command, const String_t attr_name, const String_t attr_value);
+typedef Entry_String_t* (*Attribute_Fn_t)(Entry_Common_Definition_t* p_entry_common_definition, const String_t attr_command, const String_t attr_name, const String_t attr_value);
 
-// typedef for DefineFn - called to create a new definition of this type - provided my module
-typedef strTextMultiple_t* (* DefineFn_t)(Common_Definition_t *Common_Definition);
-
-//
-typedef int (* DeleteFn_t)(Common_Definition_t *Common_Definition);		
-
+// typedef for Define_Fn - called to create a new definition of this type
+typedef Entry_String_t* (*Define_Fn_t)(Entry_Common_Definition_t *p_entry_common_definition);
 
 //
-typedef int (* DirectReadFn_t)(Common_Definition_t *Common_Definition);
+typedef int (*DeleteFn_t)(Entry_Common_Definition_t *p_entry_common_definition);		
+
+
+//
+typedef int (*DirectReadFn_t)(Entry_Common_Definition_t *p_entry_common_definition);
 
 // typedef for DirectWriteFn - for 2 stage designs - called to give write job to 1st stage - provided my module
-/*typedef strTextMultiple_t* (* DirectWriteFn_t)(Common_Definition_t *Common_Definition_Stage1, Common_Definition_t *Common_Definition_Stage2, Common_StageXCHG_t *Common_StageXCHG);*/
-typedef int (* DirectWriteFn_t)(Common_Definition_t *Common_Definition);
+/*typedef strTextMultiple_t* (* DirectWriteFn_t)(Entry_Common_Definition_t *p_entry_common_definition_Stage1, Entry_Common_Definition_t *p_entry_common_definition_Stage2, Common_StageXCHG_t *Common_StageXCHG);*/
+typedef int (*DirectWriteFn_t)(Entry_Common_Definition_t *p_entry_common_definition);
 
 //
-typedef int (* ExceptFn_t)(Common_Definition_t *Common_Definition);
+typedef int (*ExceptFn_t)(Entry_Common_Definition_t *p_entry_common_definition);
 
 //
-typedef int (* FingerprintFn_t)(Common_Definition_t *Common_Definition);
+typedef int (*FingerprintFn_t)(Entry_Common_Definition_t *p_entry_common_definition);
 
 // typedef for GetFn - for 2 stage designs - called to get data from this type - provided my module
-typedef int (* GetFn_t)(Common_Definition_t *Common_Definition, Common_Definition_t *sourceCommon_Definition, void *X);
-//typedef int (* GetFn_t)(Common_StageXCHG_t *Common_StageXCHG);
+typedef int (*GetFn_t)(Entry_Common_Definition_t *p_entry_common_definition, Entry_Common_Definition_t *sourcep_entry_common_definition, void *X);
+//typedef int (*GetFn_t)(Common_StageXCHG_t *Common_StageXCHG);
 
 //
-typedef int (* IdleCbFn_t)(Common_Definition_t *Common_Definition);
+typedef int (*IdleCbFn_t)(Entry_Common_Definition_t *p_entry_common_definition);
 
 //
-typedef int (* InitializeFn_t)(SCDERoot_t *SCDERoot);
+typedef int (*InitializeFn_t)(SCDERoot_t *SCDERoot);
 
 //
-typedef int (* NotifyFn_t)(Common_Definition_t *Common_Definition);
+typedef int (*NotifyFn_t)(Entry_Common_Definition_t *p_entry_common_definition);
 
 // typedef for ParseFn - for 2 stage designs - called to give job data to 2nd stage - provided my module
-typedef strTextMultiple_t* (* ParseFn_t)(Common_StageXCHG_t *Common_StageXCHG);
+typedef strTextMultiple_t* (*ParseFn_t)(Common_StageXCHG_t *Common_StageXCHG);
 
 //
-typedef int (* ReadFn_t)(Common_Definition_t *Common_Definition);
+typedef int (*ReadFn_t)(Entry_Common_Definition_t *p_entry_common_definition);
 
 //
-typedef int (* ReadyFn_t)(Common_Definition_t *Common_Definition);
+typedef int (*ReadyFn_t)(Entry_Common_Definition_t *p_entry_common_definition);
 
 // typedef for RenameFn - called to inform the definition about its renameing - provided my module
-typedef strTextMultiple_t* (* RenameFn_t)(Common_Definition_t *Common_Definition, uint8_t *newName, size_t newNameLen, uint8_t *oldName, size_t oldNameLen);
+typedef strTextMultiple_t* (*RenameFn_t)(Entry_Common_Definition_t *p_entry_common_definition, uint8_t *newName, size_t newNameLen, uint8_t *oldName, size_t oldNameLen);
 
 // typedef for SetFn - called to send data to the definition (opposite of Get) - provided my module
-typedef strTextMultiple_t* (* SetFn_t)(Common_Definition_t *Common_Definition, uint8_t *setArgs, size_t setArgsLen);
+typedef strTextMultiple_t* (*SetFn_t)(Entry_Common_Definition_t *p_entry_common_definition, uint8_t *setArgs, size_t setArgsLen);
 
 // typedef for ShutdownFn - called to do activities before SCDE shuts down - provided my module
-typedef strTextMultiple_t* (* ShutdownFn_t)(Common_Definition_t *Common_Definition);
+typedef strTextMultiple_t* (*ShutdownFn_t)(Entry_Common_Definition_t *p_entry_common_definition);
 
 // typedef for StateFn - called to set an state for this definition e.g. called from setstate cmd for recovery from save
-//typedef strTextMultiple_t* (* StateFn_t)(Common_Definition_t *Common_Definition, time_t readingTiSt,
+//typedef strTextMultiple_t* (*StateFn_t)(Entry_Common_Definition_t *p_entry_common_definition, time_t readingTiSt,
 // uint8_t *readingName, size_t readingNameLen, uint8_t *readingValue, size_t readingValueLen,
 // uint8_t *readingMime, size_t readingMimeLen);
 
 // typedef for StateFn - called to set an state for this definition.
 // Normally called from setstate cmd when recovering states from save from save
-typedef Entry_String_t* (* StateFn_t) (Common_Definition_t *Common_Definition, const time_t stateTiSt, const String_t stateNameString, const String_t stateValueString, const String_t stateMimeString);
+typedef Entry_String_t* (*StateFn_t) (Entry_Common_Definition_t *p_entry_common_definition, const time_t stateTiSt, const String_t stateNameString, const String_t stateValueString, const String_t stateMimeString);
 
 // typedef for SubFn - experimental - provided my module
-typedef strTextMultiple_t* (* SubFn_t)(Common_Definition_t *Common_Definition, uint8_t *kArgs, size_t kArgsLen);
+typedef strTextMultiple_t* (*SubFn_t)(Entry_Common_Definition_t *p_entry_common_definition, uint8_t *kArgs, size_t kArgsLen);
 
-// typedef for UndefineFn - called when an definition is deleted, chance to cleanup - provided my module
-typedef strTextMultiple_t* (* UndefineFn_t)(Common_Definition_t *Common_Definition);		
+// typedef for Undefine_Fn - called when an definition is deleted, chance to cleanup - provided my module
+typedef Entry_String_t* (*Undefine_Fn_t)(Entry_Common_Definition_t *p_entry_common_definition);//, String_t opt_args);		
 
 // typedef for WriteFn - called to write data to the definition
-typedef Entry_String_t* (* WriteFn_t) (Common_Definition_t *Common_Definition, String_t data);
+typedef Entry_String_t* (*WriteFn_t) (Entry_Common_Definition_t *p_entry_common_definition, String_t data);
 
 
 /* 
@@ -569,33 +562,33 @@ typedef Entry_String_t* (* WriteFn_t) (Common_Definition_t *Common_Definition, S
  * - information is sent to SCDE by module, when loaded
  * - done by InitializeFn after module the loaded
  */
-struct ProvidedByModule_s {
-  uint8_t typeName[32];		// Type-Name = Module Name
+struct Provided_By_Module_s {
+  uint8_t typeName[32];		    // Type-Name = Module Name
   size_t typeNameLen;
 
-  AddFn_t AddFn;		//
+  AddFn_t AddFn;		        //
   Attribute_Fn_t Attribute_Fn;	// called in case of attribute changes, to check them
-  DefineFn_t DefineFn;		// defineDefinitionFn, called to create a new definition of this type
-  DeleteFn_t DeleteFn;		// deleteDefinitionFn, to cleanup (delete log), called by delete after UndefFn
+  Define_Fn_t Define_Fn;		// called to create a new definition of this type
+  DeleteFn_t DeleteFn;		    // deleteDefinitionFn, to cleanup (delete log), called by delete after UndefFn
   DirectReadFn_t DirectReadFn;	// readDirectFn      , called from select loop to read
   DirectWriteFn_t DirectWriteFn;// writeDirectFn     , called from select loop to write
-  ExceptFn_t ExceptFn;		//                   , called if the global select reports an except field
-  GetFn_t GetFn;		// get some data from this device
-  IdleCbFn_t IdleCbFn;		//                   , give module an Idle-Callback to process something
+  ExceptFn_t ExceptFn;		    //                   , called if the global select reports an except field
+  GetFn_t GetFn;		        // get some data from this device
+  IdleCbFn_t IdleCbFn;		    //                   , give module an Idle-Callback to process something
   InitializeFn_t InitializeFn;	// initializeModuleFn, set up module for operation (after load)
-  NotifyFn_t NotifyFn;		//                   , call this if some device changed its properties
-  ParseFn_t ParseFn;		//                   , Interpret a new message
-  ReadFn_t ReadFn;		//                   , Reading / receiving from a Device
-  ReadyFn_t ReadyFn;		//                   , check for available data, if no FD
-  RenameFn_t RenameFn;		// renameDefinitionFn, called to inform the definition about its renameing
-  SetFn_t SetFn;		// setDefinitionFn?  , set/activate this device
-  ShutdownFn_t ShutdownFn;	//                   ,called before shutdown
-  StateFn_t StateFn;		//                   ,set local info for this device, do not activate anything
-  SubFn_t SubFn;		//                   ,called when Attribute-Keys owned by this Module are deleted
-  UndefineFn_t UndefineFn;	//                   ,clean up (delete timer, close fd), called by delete and rereadcfg
-  WriteFn_t WriteFn;		//
-  void* CustomFn;		// ... provided by this Module (non-standard Fn). For other Modules.
-  int SizeOfDefinition;//sizeOf..// Size of modul specific definition structure (Common_Definition_t + X)
+  NotifyFn_t NotifyFn;		    //                   , call this if some device changed its properties
+  ParseFn_t ParseFn;		    //                   , Interpret a new message
+  ReadFn_t ReadFn;		        //                   , Reading / receiving from a Device
+  ReadyFn_t ReadyFn;		    //                   , check for available data, if no FD
+  RenameFn_t RenameFn;		    // renameDefinitionFn, called to inform the definition about its renameing
+  SetFn_t SetFn;		        // setDefinitionFn?  , set/activate this device
+  ShutdownFn_t ShutdownFn;	    //                   ,called before shutdown
+  StateFn_t StateFn;		    //                   ,set local info for this device, do not activate anything
+  SubFn_t SubFn;		        //                   ,called when Attribute-Keys owned by this Module are deleted
+  Undefine_Fn_t Undefine_Fn;	//                   ,clean up (delete timer, close fd), called by delete and rereadcfg
+  WriteFn_t WriteFn;		    //
+  void* CustomFn;		        // ... provided by this Module (non-standard Fn). For other Modules.
+  int SizeOfDefinition;         //sizeOf..// Size of modul specific definition structure (Entry_Common_Definition_t + X)
 };
 
 
@@ -612,7 +605,7 @@ struct ProvidedByModule_s {
  */
 struct Entry_Module_s {
   STAILQ_ENTRY (Entry_Module_s) entries;	// Link to next loaded Module
-  ProvidedByModule_t *provided;				// Ptr to Provided by Module Info
+  Provided_By_Module_t *provided;				// Ptr to Provided by Module Info
   void* lib_handle;							// Handle to this loaded Module
 
  // place  Provided  FNS here direct ?
@@ -706,7 +699,7 @@ typedef struct xReading2SLTQE_s xReading2SLTQE_t;
 struct xReading2SLTQE_s {
   STAILQ_ENTRY(xReading2SLTQE_s) entries;	// link to next Reading2SLTQE element
   Reading2_t* reading;				// ptr to the reading data
-  Common_Definition_t* definition;		// the Definition the reading belongs to
+  Entry_Common_Definition_t* definition;		// the Definition the reading belongs to
 };
 
 /*
@@ -744,12 +737,12 @@ struct bulkUpdateReadings2_s {
 
 
 /* 
- * Entry Definition (struct)
+ * Entry Common Definition (struct)
  * - stores values for operation of an definition (device), common part,  valid only for the defined
  * - instance of an loaded module. Values are initialized by the SCDE and finalized by the
  *   loaded module itself (defineFn).
  */
-struct Entry_Definition_s {
+struct Entry_Common_Definition_s {
   STAILQ_ENTRY(Entry_Definition_s) entries;			// Link to next Definition
  
 //  STAILQ_HEAD (stailhead8, common_Attribute_s) headAttributes;	//p_head_attribute	// Link to assigned Attributes
@@ -759,27 +752,65 @@ struct Entry_Definition_s {
 
  //? uint32_t* link;						//link to next struct
 
-  // strText_t name; NEU
-  uint8_t* name; //p_name;					// Ptr to the Name string (assigned by users declaration - in allocated mem)
-  size_t nameLen; //name_len
+  union 
+  {
+  struct // new
+    {
+    String_t nname;                                     // this definitions 'name' string
+    };
+  struct // old
+    {
+    uint8_t* name;              				        // this definitions 'name' string (assigned by users declaration - in allocated mem)
+    size_t nameLen; 
+    };
+  };
 
-  Entry_Module_t* module; //entry_module;			// Ptr to the Module_t (assigned when module is loaded)
+  union 
+  {
+  struct // new
+    {
+    Entry_Module_t* p_entry_module;             // Ptr to the Module_t (assigned when module is loaded)
+    };
+  struct // old
+    {
+    Entry_Module_t* module; 
+    };
+  };
 
-// the 'STATE' reading						// the STATE reading is obligatory for every definition !
-// strText_t reading_state_value; NEU
-  uint8_t* state; //p_reading_state_value				// Ptr to allocated memory filled with oneliner-text describing its STATE
-  size_t stateLen; //reading_state_value_len;			// and the length of the oneliner-text
-  time_t stateTiSt; //reading_state_timestamp			// SCDE has also a timestamp for STATE
 
-// strText_t definition; NEU
-  uint8_t* definition;// p_definition				// Ptr to allocated memory filled with users definition string
-  size_t definitionLen;// definition_len
+  union 
+  {
+  struct // new
+    {
+    String_t reading_state_value;                   // the STATE reading is obligatory for every definition !
+    };
+  struct // old
+    {
+    uint8_t* state;
+    size_t stateLen; 
+    };
+  };
+  time_t stateTiSt; //reading_state_timestamp	    // SCDE has also a timestamp for STATE
 
-  uint32_t nr;							// An unique sequential number assigned to definition
-								// to rebuild /save in the order of definition-creation
 
-  int fd;							// FileDescriptor. Used by selectlist / readyfnlist 
-								// (-1 = not assigned)
+  union 
+  {
+  struct // new
+    {
+    String_t def;                               // the definition arguments stored here
+    };
+  struct // old
+    {
+    uint8_t* definition;
+    size_t definitionLen; 
+    };
+  };
+             
+  uint32_t nr;							        // An unique sequential number assigned to definition
+								                // to rebuild /save in the order of definition-creation
+
+  int fd;							            // FileDescriptor. Used by selectlist / readyfnlist 
+								                // (-1 = not assigned)
 
   int Common_CtrlRegA; //common_control_register_a		// Common Control Reg A (enum Common_CtrlRegA from WEBIF.h)
 
@@ -843,8 +874,8 @@ typedef struct Common_StageXCHG_s Common_StageXCHG_t;
  */
 struct Common_StageXCHG_s {
 
-  Common_Definition_t *definitionStage1;	// ptr to the definition that is 1 st stage
-  Common_Definition_t *definitionStage2;	// ptr to the definition that is 2 nd stage
+  Entry_Common_Definition_t *definitionStage1;	// ptr to the definition that is 1 st stage
+  Entry_Common_Definition_t *definitionStage2;	// ptr to the definition that is 2 nd stage
 
   int stageCtrlRegA;		// Stage processing Control Register A (enum Common_stageCtrlRegA)
 };
@@ -917,7 +948,7 @@ typedef struct Entry_Definitions_s Entry_Definitions_t;
 
 /*
  * Entry_Definitions_s (struct) 
- * - is an singly linked tail queue entry and stores the link to one Common_Definition_t
+ * - is an singly linked tail queue entry and stores the link to one Entry_Common_Definition_t
  * it is used when storing multiple strings (in an singly tail linked queue)
  */
 struct Entry_Definitions_s {
@@ -947,8 +978,8 @@ typedef struct Entry_Attr_Name_s Entry_Attr_Name_t;
  * - holds the name of an assigned attribute (attr_name). (linked list from queue.h)
  */
 struct Entry_Attr_Name_s {
-  LIST_ENTRY(Entry_Attr_Name_s) entries;		// links to next list entries
-  String_t attr_name;					// an assigned Attribute Name
+  LIST_ENTRY(Entry_Attr_Name_s) entries;	// links to next list entries
+  String_t attr_name;					    // an assigned Attribute Name
 };
 
 

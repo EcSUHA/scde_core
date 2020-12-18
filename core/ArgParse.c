@@ -382,22 +382,22 @@ void
 ArgParse_PrepareLeadinErrorMsg(struct argparse *self, const struct argparse_option *opt,
                const char *reason, int flags)
 {
-  // allocate mem to prepare an concrete error msg (used as lead in of an complete retMsg)
-  self->retMsg = malloc(sizeof(Entry_String_t));
+  // allocate mem to prepare an concrete error msg (used as lead in of an complete ret_msg)
+  self->ret_msg = malloc(sizeof(Entry_String_t));
 
   (void)self;
 
   if (flags & OPT_LONG) {
 
     // generate concrete error msg - long_name
-    self->retMsg->string.len = asprintf(&self->retMsg->string.p_char
+    self->ret_msg->string.len = asprintf(&self->ret_msg->string.p_char
         ,"error: option `%s` %s\n" // was `--%s`
         ,opt->long_name, reason);
 
   } else {
 
     // generate concrete error msg - short_name
-    self->retMsg->string.len = asprintf(&self->retMsg->string.p_char
+    self->ret_msg->string.len = asprintf(&self->ret_msg->string.p_char
         ,"error: option `-%c` %s\n"
         ,opt->short_name
         ,reason);
@@ -406,9 +406,23 @@ ArgParse_PrepareLeadinErrorMsg(struct argparse *self, const struct argparse_opti
 
 
 
-// parses an implemented argument and calls the assigned callback. May prepare error retMsg.
-// returns 0 = OK (alternativ vom callback) / -3 Fehler,aber spezifische msg schon gesetzt, keine ergänzung nötig
-// (-1=break in command(hier nicht) und -2=unknown args error hier nicht)
+
+
+
+
+
+/**
+ * -------------------------------------------------------------------------------------------------
+ *  FName: _Argparse_GetValue
+ *  Desc: Step.1: Parses an implemented argument (temporary extracts the value)
+ *        Step.2: Calls the assigned callback for value finalization, or stores the value if no cb.
+ *  Info: May prepare error ret_msg.
+ *  Para: struct argparse *self ->  
+ *        const struct argparse_option *options -> 
+ *  Rets: static int result -> 0=ok / -1=  break in command (here not used!) /
+ *                           -2 = unkn. args error (here not used!) / -3 = error -> ret_msg is filled
+ * -------------------------------------------------------------------------------------------------
+ */
 static int //Argparse_GetValue
 argparse_getvalue(struct argparse *self,
                   const struct argparse_option *opt,
@@ -416,14 +430,15 @@ argparse_getvalue(struct argparse *self,
 {
   const char *s = NULL;
 
-  // temp ptr to temp stage1 values
-  void *stage1Value;
+  // ptr to temp stage1 value
+  void *stage1_value;
 
   // temp stage1 values
-//  bool stage1Bool;			// ARGPARSE_OPT_BOOL:	
-  const char *stage1String = NULL;	// ARGPARSE_OPT_STRING:
-  int stage1Integer;			// ARGPARSE_OPT_INTEGER:
-  float stage1Float;			// ARGPARSE_OPT_FLOAT:
+//  bool stage1Bool;			    // ARGPARSE_OPT_BOOL:	
+  const char *stage1_char = NULL;	// ARGPARSE_OPT_STRING:
+  int stage1_int;			        // ARGPARSE_OPT_INT:
+  uint8_t stage1_uint8;			    // ARGPARSE_OPT_UINT8:
+  float stage1_float;			    // ARGPARSE_OPT_FLOAT:
 
 
   // do we need to get a value? Else skip
@@ -470,8 +485,8 @@ argparse_getvalue(struct argparse *self,
 
       if (self->optvalue) {
 
-       stage1String = self->optvalue;
-       stage1Value = (void*) &stage1String;
+       stage1_char = self->optvalue;
+       stage1_value = (void*) &stage1_char;
 
 //      *(const char **)opt->value = self->optvalue;
         self->optvalue             = NULL;
@@ -479,8 +494,8 @@ argparse_getvalue(struct argparse *self,
       } else if (self->argc > 1) {
 
         self->argc--;
-        stage1String =  *++self->argv;
-        stage1Value = (void*) &stage1String;
+        stage1_char =  *++self->argv;
+        stage1_value = (void*) &stage1_char;
 
 //        *(const char **)opt->value = *++self->argv;
 
@@ -493,14 +508,14 @@ argparse_getvalue(struct argparse *self,
       break;
 
     // ?
-    case ARGPARSE_OPT_INTEGER:
+    case ARGPARSE_OPT_INT:
 
       errno = 0;
 
       if (self->optvalue) {
 
-       stage1Integer = strtol(self->optvalue, (char **)&s, 0);
-       stage1Value = (void*) &stage1Integer;
+       stage1_int = strtol(self->optvalue, (char **)&s, 0);
+       stage1_value = (void*) &stage1_int;
 
 //      *(int *)opt->value = strtol(self->optvalue, (char **)&s, 0);
 
@@ -509,8 +524,8 @@ argparse_getvalue(struct argparse *self,
       } else if (self->argc > 1) {
 
         self->argc--;
-        stage1Integer =  strtol(*++self->argv, (char **)&s, 0);
-        stage1Value = (void*) &stage1Integer;
+        stage1_int =  strtol(*++self->argv, (char **)&s, 0);
+        stage1_value = (void*) &stage1_int;
 
 //      *(int *)opt->value = strtol(*++self->argv, (char **)&s, 0);
 
@@ -534,14 +549,55 @@ argparse_getvalue(struct argparse *self,
       break;
 
     // ?
+    case ARGPARSE_OPT_UINT8:
+
+      errno = 0;
+
+      if (self->optvalue) {
+
+       stage1_uint8 = strtol(self->optvalue, (char **)&s, 0);
+       stage1_value = (void*) &stage1_uint8;
+
+//      *(int *)opt->value = strtol(self->optvalue, (char **)&s, 0);
+
+        self->optvalue     = NULL;
+
+      } else if (self->argc > 1) {
+
+        self->argc--;
+        stage1_uint8 =  strtol(*++self->argv, (char **)&s, 0);
+        stage1_value = (void*) &stage1_uint8;
+
+//      *(int *)opt->value = strtol(*++self->argv, (char **)&s, 0);
+
+      } else {
+
+        ArgParse_PrepareLeadinErrorMsg(self, opt, "requires a value", flags);
+        return -3;
+      }
+
+      if (errno) {
+        ArgParse_PrepareLeadinErrorMsg(self, opt, strerror(errno), flags);
+        return -3;
+      }
+
+      if (s[0] != '\0') {
+
+        ArgParse_PrepareLeadinErrorMsg(self, opt, "expects an uint8 value", flags);
+        return -3;
+      }
+
+      break;
+
+    // ?
     case ARGPARSE_OPT_FLOAT:
 
       errno = 0;
 
       if (self->optvalue) {
 
-       stage1Float = strtof(self->optvalue, (char **)&s);
-       stage1Value = (void*) &stage1Float;
+       stage1_float = strtof(self->optvalue, (char **)&s);
+       stage1_value = (void*) &stage1_float;
 
 //        *(float *)opt->value = strtof(self->optvalue, (char **)&s);
 
@@ -550,8 +606,8 @@ argparse_getvalue(struct argparse *self,
       } else if (self->argc > 1) {
 
         self->argc--;
-        stage1Float =  strtof(*++self->argv, (char **)&s);
-        stage1Value = (void*) &stage1Float;
+        stage1_float =  strtof(*++self->argv, (char **)&s);
+        stage1_value = (void*) &stage1_float;
 
 //      *(float *)opt->value = strtof(*++self->argv, (char **)&s);
 
@@ -608,51 +664,66 @@ skipped:
   // is an stage2 callback assigned? -> call with temporary stage1 value
   if (opt->callback) {
 
-    return opt->callback(self, opt, flags, &stage1Value);
+    int result = opt->callback(self, opt, flags, &stage1_value);
+    
+    // we have parsed the arg sucessfully? -> mark as parsed  
+    if (!result) self->parsed_args_bf |= (1 << opt->args_id_bit);
+    
+    return result;
 
   // else store stage1 value as final value
   } else {
 
- // store value the right way
-  switch (opt->type) {
+    // we have parsed the arg -> mark as parsed
+    self->parsed_args_bf |= (1 << opt->args_id_bit);
 
-   // ?
-    case ARGPARSE_OPT_BIT:
+    // store value the right way
+    switch (opt->type) {
 
-      break;
+      // ?
+      case ARGPARSE_OPT_BIT:
 
-    // ?
-    case ARGPARSE_OPT_BOOLEAN:
+        break;
+
+      // ?
+      case ARGPARSE_OPT_BOOLEAN:
 
 //      *(bool *)opt->value =
 
-      break;
+        break;
 
-    // keep stage1 string
-    case ARGPARSE_OPT_STRING:
+      // keep stage1 string
+      case ARGPARSE_OPT_STRING:
 
-      *(const char **)opt->value = stage1String;
+        *(const char **)opt->value = stage1_char;
 
-      break;
+        break;
 
-    // keep stage1 integer
-     case ARGPARSE_OPT_INTEGER:
+      // keep stage1 integer
+      case ARGPARSE_OPT_INT:
 
-      *(int *)opt->value = stage1Integer;
+        *(int *)opt->value = stage1_int;
 
-      break;
+        break;
+        
+      // keep stage1 uint8
+      case ARGPARSE_OPT_UINT8:
 
-    // keep stage1 float
-    case ARGPARSE_OPT_FLOAT:
+        *(uint8_t *)opt->value = stage1_uint8;
 
-      *(float *)opt->value = stage1Float;
+        break;
 
-      break;
+      // keep stage1 float
+      case ARGPARSE_OPT_FLOAT:
 
-    // should not happen ...
-    default:
+        *(float *)opt->value = stage1_float;
 
-      assert(0);
+        break;
+
+      // should not happen ...
+      default:
+
+        assert(0);
     } 
   }
 
@@ -669,7 +740,8 @@ argparse_options_check(const struct argparse_option *options)
         case ARGPARSE_OPT_END:
         case ARGPARSE_OPT_BOOLEAN:
         case ARGPARSE_OPT_BIT:
-        case ARGPARSE_OPT_INTEGER:
+        case ARGPARSE_OPT_INT:
+        case ARGPARSE_OPT_UINT8:
         case ARGPARSE_OPT_FLOAT:
         case ARGPARSE_OPT_STRING:
         case ARGPARSE_OPT_GROUP:
@@ -762,8 +834,8 @@ argparse_long_opt(struct argparse *self
       }
 
       // only OPT_BOOLEAN/OPT_BIT supports negation
-      if (options->type != ARGPARSE_OPT_BOOLEAN && options->type !=
-            ARGPARSE_OPT_BIT) {
+      if (options->type != ARGPARSE_OPT_BOOLEAN && 
+          options->type != ARGPARSE_OPT_BIT) {
 
         continue;
       }
@@ -925,20 +997,18 @@ ArgParse_Init(struct argparse *self, struct argparse_option *options,
               const char *const *usages, int flags, const char *description,
                   const char *epilog)
 {
+  // all members ZERO
   memset(self, 0, sizeof(*self));
 
+  // except ...
   self->options     = options;
   self->usages      = usages;
   self->flags       = flags;
   self->description = description;
   self->epilog      = epilog;
-  self->retMsg      = NULL;
 
   return NULL;
 }
-
-
-
 
 
 
@@ -957,7 +1027,7 @@ ArgParse_Init(struct argparse *self, struct argparse_option *options,
 /*
    case  0: ok_end      -> no error occured till now          -> the ArgParse will be completed without error msg.
    case -1:		-> 
-   case -2: unknown_end -> unknown option error occured in options parse  -> retMsg=the argument that causes the error + usage
+   case -2: unknown_end -> unknown option error occured in options parse  -> ret_msg=the argument that causes the error + usage
    case -3: error_end   -> an error occured in detailed parse -> an detailed error msg must be stored to submit
 */
 
@@ -969,12 +1039,16 @@ ArgParse_Parse(struct argparse *self, int argc, const char **argv)
   self->argv = argv;
   self->out  = argv;
 
+  // not really required
   argparse_options_check(self->options);
 
   // loop through the arguments
   for (; self->argc; self->argc--, self->argv++) {
 
+    // get ptr to this loops arg-text
     const char *arg = self->argv[0];
+
+
 
     // short option leadin (-) + an option key -> start parse 
     if (arg[0] == '-' && arg[1]) {
@@ -1020,11 +1094,16 @@ ArgParse_Parse(struct argparse *self, int argc, const char **argv)
     }
 
 
+
+
+
     // short option leadin (-) + an NO option key -> next arg 
     if (arg[0] == '-' && !arg[1]) {
 
       continue;
     }
+
+
 
 
     // 3rd char in arg -> long option
@@ -1051,36 +1130,35 @@ ArgParse_Parse(struct argparse *self, int argc, const char **argv)
     unknown_end: ;
 
     // allocate mem to prepare the error msg
-    self->retMsg = malloc(sizeof(Entry_String_t));
+    self->ret_msg = malloc(sizeof(Entry_String_t));
 
     // generate concrete error msg - long_name
-    self->retMsg->string.len = asprintf(&self->retMsg->string.p_char
+    self->ret_msg->string.len = asprintf(&self->ret_msg->string.p_char
         ,"error: unknown option `%s`"
         , self->argv[0]);
 
     ArgParse_Usage(self);
 
-    return self->retMsg;
+    return self->ret_msg;
 
 
     // an error occured in detailed parse
     // we have already prepared an detailed error msg, return it
     error_end: ;
 
-   return self->retMsg;
+    return self->ret_msg;
   }
 
-
-  // ok, no error msg is prepared = return NULL. ArgParse ends here.
+  // ok, arguments looped, no error msg is prepared = return NULL. ArgParse ends here.
 //  ok_end:
 
-    // move the rest of arguments without processing (if any)
-    memmove(self->out + self->cpidx, self->argv,
-        self->argc * sizeof(*self->out));
+  // move the rest of arguments without processing (if any)
+  memmove(self->out + self->cpidx, self->argv,
+      self->argc * sizeof(*self->out));
 
   self->out[self->cpidx + self->argc] = NULL;
 
-  // parsed ok, till now no retMsg, argc = self->cpidx + self->argc !
+  // parsed ok, till now no ret_msg, argc = self->cpidx + self->argc !
   return NULL;
 }
 
@@ -1193,23 +1271,23 @@ ArgParse_Parse(struct argparse *self, int argc, const char **argv)
     unknown_end: ;
 
     // allocate mem to prepare the error msg
-    self->retMsg = malloc(sizeof(Entry_String_t));
+    self->ret_msg = malloc(sizeof(Entry_String_t));
 
     // generate concrete error msg - long_name
-    self->retMsg->string.len = asprintf(&self->retMsg->string.p_char
+    self->ret_msg->string.len = asprintf(&self->ret_msg->string.p_char
         ,"error: unknown option `%s`"
         , self->argv[0]);
 
     ArgParse_Usage(self);
 
-    return self->retMsg;
+    return self->ret_msg;
 
 
     // an error occured in detailed parse
     // we have already prepared an detailed error msg, return it
     error_end: ;
 
-   return self->retMsg;
+   return self->ret_msg;
   }
 
 
@@ -1222,7 +1300,7 @@ ArgParse_Parse(struct argparse *self, int argc, const char **argv)
 
   self->out[self->cpidx + self->argc] = NULL;
 
-  // parsed ok, till now no retMsg, argc = self->cpidx + self->argc !
+  // parsed ok, till now no ret_msg, argc = self->cpidx + self->argc !
   return NULL;
 }
 */
@@ -1254,7 +1332,7 @@ printf("entering usage...\n");
 
 
   // we will build an 'usage' return message
-  Entry_String_t *retMsg = NULL;
+  Entry_String_t *ret_msg = NULL;
 
   // the write offset -> will later be used to calculate required strBufferLen, too
   size_t strWriteOffset;
@@ -1268,30 +1346,30 @@ printf("entering usage...\n");
     // in 2nd cycle we will have the buffer-length here, to alloc
     if (strBufferLen) {
 
-      // alloc mem for retMsg
-      retMsg = malloc(sizeof(Entry_String_t));
+      // alloc mem for ret_msg
+      ret_msg = malloc(sizeof(Entry_String_t));
 
       // the buffer for the answer string
-      retMsg->string.len = strBufferLen;
-      retMsg->string.p_char = malloc(strBufferLen+1);
+      ret_msg->string.len = strBufferLen;
+      ret_msg->string.p_char = malloc(strBufferLen+1);
 
       // finally set string position to write (2nd cycle)
-      p_strBuffer  = (char *) retMsg->string.p_char;
+      p_strBuffer  = (char *) ret_msg->string.p_char;
     }
 
     // reset the string write offset
     strWriteOffset = 0;
 
-    // retMsg: print starts here
+    // ret_msg: print starts here
 
     // inserting existing lead-in error msg (if any)
-    if (self->retMsg) {
+    if (self->ret_msg) {
 
       strWriteOffset += snprintf(p_strBuffer + strWriteOffset
             ,strBufferLen
             ,"%.*s"
-            ,self->retMsg->string.len
-            ,self->retMsg->string.p_char);
+            ,self->ret_msg->string.len
+            ,self->ret_msg->string.p_char);
     }
 
   // list the assigned usages, or simply Usage:
@@ -1354,9 +1432,14 @@ printf("entering usage...\n");
       len += strlen((options)->long_name) + 2;
     }
 
-    if (options->type == ARGPARSE_OPT_INTEGER) {
+    if (options->type == ARGPARSE_OPT_INT) {
 
       len += strlen("=<int>");
+    }
+    
+    if (options->type == ARGPARSE_OPT_UINT8) {
+
+      len += strlen("=<uint8>");
     }
 
     if (options->type == ARGPARSE_OPT_FLOAT) {
@@ -1445,11 +1528,17 @@ printf("entering usage...\n");
             , options->long_name);
     }
 
-    if (options->type == ARGPARSE_OPT_INTEGER) {
+    if (options->type == ARGPARSE_OPT_INT) {
 
       pos += snprintf(p_strBuffer + strWriteOffset + pos
             ,strBufferLen
             ,"=<int>");
+
+    } else if (options->type == ARGPARSE_OPT_UINT8) {
+
+      pos += snprintf(p_strBuffer + strWriteOffset + pos
+            ,strBufferLen
+            ,"=<uint8>");
 
     } else if (options->type == ARGPARSE_OPT_FLOAT) {
 
@@ -1500,28 +1589,28 @@ printf("entering usage...\n");
             ,"%s\n", self->epilog);
     }
 
-    // retMsg: print is completed here
+    // ret_msg: print is completed here
 
     // store reqired buffer length for alloc in 2nd cycle
     strBufferLen = strWriteOffset;
 
-  } while (!retMsg);
+  } while (!ret_msg);
 
   // dealloc lead in error-msg,if any
-  if (self->retMsg) {
+  if (self->ret_msg) {
 
-    if (self->retMsg->string.p_char) free(self->retMsg->string.p_char);
-    free (self->retMsg);
+    if (self->ret_msg->string.p_char) free(self->ret_msg->string.p_char);
+    free (self->ret_msg);
   }
 
   // finally store the prepared 'usage' return message
-  self->retMsg = retMsg;     
+  self->ret_msg = ret_msg;     
 
 
 
 
 // temporary solution
- retMsg->string.len = strBufferLen;
+ ret_msg->string.len = strBufferLen;
 }
 
 
@@ -1541,7 +1630,7 @@ int
 argparse_help_cb(struct argparse *self
                 ,const struct argparse_option *option
                 ,int flags
-                ,void *stage1Value)
+                ,void *stage1_value)
 {
   (void)option;
 
@@ -1549,7 +1638,7 @@ argparse_help_cb(struct argparse *self
 
 printf("HELP-callback\n");
 
- return -3; // because ArgParse_Usage prepares an retMsg
+ return -3; // because ArgParse_Usage prepares an ret_msg
 //    exit(0);
 }
 

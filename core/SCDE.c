@@ -107,7 +107,6 @@ SCDEFn_t SCDEFn = {
   ,Get_Attr_Val_By_Def_Name_And_Attr_Name
 
 // not final
-  ,CommandUndefine
   ,ParseKVInputArgs
 };
 

@@ -59,10 +59,10 @@ doGlobalDef(const uint8_t *cfgFileName
 //  AnalyzeCommand((const uint8_t *) "attr global verbose 3", 21);
 //  AnalyzeCommand((const uint8_t *) "attr global logfile -", 21);
 
-  String_t x = { "attr global verbose 3", 21};
+  String_t x = { (const uint8_t*) "attr global verbose 3", 21};
   AnalyzeCommand(x);
   
-  String_t y = { "attr global logfile -", 21};
+  String_t y = { (const uint8_t*) "attr global logfile -", 21};
   AnalyzeCommand(y);
   
 //  AnalyzeCommand( (const uint8_t *) "attr global verbose 3",  21 );

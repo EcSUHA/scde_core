@@ -12,10 +12,10 @@
 
 
 // the initialize Fn
-int Delete_InitializeCommandFn(SCDERoot_t* SCDERootptr);
+int Delete_InitializeCommand_Fn(SCDERoot_t* SCDERootptr);
 
 // the main command Fn
-struct headRetMsgMultiple_s Delete_CommandFn (const uint8_t *args, const size_t argsLen);
+struct Head_String_s Delete_Command_Fn(const String_t args);
 
 
 

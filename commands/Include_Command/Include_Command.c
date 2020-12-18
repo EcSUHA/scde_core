@@ -83,7 +83,7 @@ ProvidedByCommand_t Include_ProvidedByCommand = {
 
 
 /* --------------------------------------------------------------------------------------------------
- *  FName: Include_Initialize
+ *  FName: Include_InitializeCommandFn
  *  Desc: Initializion of SCDE Function Callback of an new loaded command
  *  Info: Stores Command-Information (Function Callbacks) to SCDE-Root
  *  Para: SCDERoot_t* SCDERootptr -> ptr to SCDE Data Root
@@ -167,7 +167,7 @@ Include_Command2Fn (const String_t args)
 	,args.p_char);
   #endif
 
-// --------------------------------------------------------------------------------------------------
+// -------------------------------------------------------------------------------------------------
 
   // prepare STAILQ head to store multiple 'ret_msg' elements
   struct Head_String_s head_ret_msg;
@@ -175,7 +175,7 @@ Include_Command2Fn (const String_t args)
   // Initialize the queue
   STAILQ_INIT(&head_ret_msg);
 
-// --------------------------------------------------------------------------------------------------
+// -------------------------------------------------------------------------------------------------
 
   // expected argument #1
   String_t file_name;

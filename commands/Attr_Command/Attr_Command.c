@@ -75,8 +75,8 @@ const uint8_t Attr_helpDetailText[] =
 ProvidedByCommand_t Attr_ProvidedByCommand = {
   "Attr",					// Command-Name of command -> libfilename.so !
   4,						// length of cmd
-  Attr_InitializeCommandFn,			// Initialize Fn
-  Attr_CommandFn,				// the Fn code
+  Attr_InitializeCommand_Fn,	// Initialize Fn
+  Attr_Command_Fn,				// the Fn code
   { &Attr_helpText, sizeof(Attr_helpText) },
   { &Attr_helpDetailText, sizeof(Attr_helpDetailText) }
 };
@@ -92,7 +92,7 @@ ProvidedByCommand_t Attr_ProvidedByCommand = {
  *--------------------------------------------------------------------------------------------------
  */
 int
-Attr_InitializeCommandFn(SCDERoot_t* p_SCDERoot_from_core)
+Attr_InitializeCommand_Fn(SCDERoot_t* p_SCDERoot_from_core)
 {
   // make data root locally available
   p_SCDERoot = p_SCDERoot_from_core;
@@ -136,7 +136,7 @@ set room=kitchen:FILTER=STATE!=off off
 
 
 
-
+/*
 // conversion to V2
 struct headRetMsgMultiple_s
 Attr_CommandFn (const uint8_t* p_args
@@ -159,7 +159,7 @@ Attr_CommandFn (const uint8_t* p_args
   x.stqh_last =  head_ret_msg.stqh_last;
   return x; 
 }
-
+*/
 
 
 
@@ -180,7 +180,7 @@ Attr_CommandFn (const uint8_t* p_args
  * -------------------------------------------------------------------------------------------------
  */
 struct Head_String_s
-Attr_Command2Fn(const String_t args)
+Attr_Command_Fn(const String_t args)
 {
   #if Attr_Command_DBG >= 7
   p_SCDEFn->Log3Fn(Attr_ProvidedByCommand.commandNameText

@@ -21,7 +21,7 @@ typedef int argparse_callback (struct argparse *self
                               ,void *stage1Value);
 
 enum argparse_flag {
-    ARGPARSE_STOP_AT_NON_OPTION = 1,
+    ARGPARSE_STOP_AT_NON_OPTION = 1,     /* disable negation */
 };
 
 enum argparse_option_type {
@@ -32,7 +32,8 @@ enum argparse_option_type {
     ARGPARSE_OPT_BOOLEAN,
     ARGPARSE_OPT_BIT,
     /* options with arguments (optional or required) */
-    ARGPARSE_OPT_INTEGER,
+    ARGPARSE_OPT_INT,
+    ARGPARSE_OPT_UINT8,
     ARGPARSE_OPT_FLOAT,
     ARGPARSE_OPT_STRING,
 
@@ -40,7 +41,8 @@ enum argparse_option_type {
 };
 
 enum argparse_option_flags {
-    OPT_NONEG = 1,              /* disable negation */
+    OPT_NONE  = 0,                      /* no option */
+    OPT_NONEG,                          /* disable negation */
 };
 
 
@@ -72,7 +74,12 @@ enum argparse_option_flags {
  *    associated data. Callbacks can use it like they want.
  *
  *  `flags`:
- *    option flags.
+ *    according to 'enum argparse_option_flags'
+ *
+ *  `args_id_bit`:
+ *    to identfy parsed arguments after fn call + result processing, in 'parsed_args_bf' (bitfield)
+ *    the parsed arguments are marked (bit is set for parsed args). `args_id_bit` is the assigned
+ *    bit for this option
  */
 struct argparse_option {
     enum argparse_option_type type;
@@ -82,12 +89,12 @@ struct argparse_option {
     const char *help;
     argparse_callback *callback;
     intptr_t data;
-    int flags;
+//    int flags;
+    uint8_t flags;
+    uint8_t args_id_bit;
+    uint8_t unused1;
+    uint8_t unused2;
 };
-
-
-
-
 
 
 
@@ -101,37 +108,39 @@ struct argparse_option {
  *    array with usage text, NULL marks end of usages.
  *
  *  `flags`:
- *    ?.
+ *   according to 'enum argparse_flag'
  *
  *  `description`:
  *    stores the prolog shown before usage.
  *
  *  `epilog`:
  *    stores the epilog shown after usage.
+ *
+ *   // internal context
+ *
+ *  `parsed_args_bf`:
+ *   parsed arguments bitfield, marks sucessfully parsed arguments, bits according to 'args_id_bit'
  */
 struct argparse {
     // user supplied
     const struct argparse_option *options;
     const char *const *usages;
-    
-    // überlegungen ...
-	uint64_t parsedargsbf; // parsed arguments bitfield -> callbacks can mark sucessfuly parsed arguments
-
-//  uint64_t requiredKVBF;	// Bit-Field set by user -> keys required for a successful parse
-//  uint64_t forbiddenKVBF;	// Bit-Field set by user -> keys forbidden for a successful parse
-//  uint64_t keysFoundBF;		// Bit-Field set by parseKV -> stores the keys found (1 << XX_IK_*)
-//  uint32_t affectedReadingsBF;	// Bit-Field set by parseKV -> stores the affected readings
-
     int flags;
-    const char *description;    // prolog usage
-    const char *epilog;         // epilog usage
+    const char *description;
+    const char *epilog;
     // internal context
-    int argc;
+    int argc;                   // initial number of args, reduced in processing loop
     const char **argv;
     const char **out;
-    int cpidx;
-    const char *optvalue;       // current option value
-    Entry_String_t *retMsg;
+    int cpidx;                  //
+    const char *optvalue;       // current processed option value (-x)
+    Entry_String_t *ret_msg;     // leadin of the ret msg
+	uint64_t parsed_args_bf;    //
+// überlegungen ...
+//  uint64_t requiredKVBF;	    // Bit-Field set by user -> keys required for a successful parse
+//  uint64_t forbiddenKVBF;	    // Bit-Field set by user -> keys forbidden for a successful parse
+//  uint64_t keysFoundBF;		// Bit-Field set by parseKV -> stores the keys found (1 << XX_IK_*)
+//  uint32_t affectedReadingsBF;// Bit-Field set by parseKV -> stores the affected readings
 };
 
 
@@ -145,15 +154,17 @@ int argparse_help_cb(struct argparse *self
 
 
 // built-in option macros
-#define OPT_END()        { ARGPARSE_OPT_END, 0, NULL, NULL, 0, NULL, 0, 0 }
+#define OPT_END()        { ARGPARSE_OPT_END, 0, NULL, NULL, 0, NULL, 0, OPT_NONE   ,0,0,0}
 #define OPT_BOOLEAN(...) { ARGPARSE_OPT_BOOLEAN, __VA_ARGS__ }
 #define OPT_BIT(...)     { ARGPARSE_OPT_BIT, __VA_ARGS__ }
-#define OPT_INTEGER(...) { ARGPARSE_OPT_INTEGER, __VA_ARGS__ }
+#define OPT_INTEGER(...) { ARGPARSE_OPT_INT, __VA_ARGS__ }
+#define OPT_INT(...)     { ARGPARSE_OPT_INT, __VA_ARGS__ }
+#define OPT_UINT8(...)   { ARGPARSE_OPT_UINT8, __VA_ARGS__ }
 #define OPT_FLOAT(...)   { ARGPARSE_OPT_FLOAT, __VA_ARGS__ }
 #define OPT_STRING(...)  { ARGPARSE_OPT_STRING, __VA_ARGS__ }
-#define OPT_GROUP(h)     { ARGPARSE_OPT_GROUP, 0, NULL, NULL, h, NULL, 0, 0 }
+#define OPT_GROUP(h)     { ARGPARSE_OPT_GROUP, 0, NULL, NULL, h, NULL, 0, OPT_NONE    ,0,0,0}
 // default help ...
-#define OPT_HELP()       OPT_BOOLEAN('h', "help", NULL, "show this help message", argparse_help_cb, 0, OPT_NONEG)
+#define OPT_HELP()       OPT_BOOLEAN('h', "help", NULL, "show this help message", argparse_help_cb, 0, OPT_NONEG   ,0,0,0)
 
 
 

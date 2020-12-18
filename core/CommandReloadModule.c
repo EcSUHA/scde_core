@@ -4,9 +4,9 @@
 #include <esp8266.h>
 #endif
 
-//#if defined(LINUX_PLATFORM)
+#if defined(LINUX_PLATFORM)
 #include <dlfcn.h>
-//#endif
+#endif
 
 #include <stddef.h>
 #include <stdint.h>
@@ -133,10 +133,10 @@ CommandReloadModule(const String_t type_name)
     
   return NULL;
   
-//#endif
+#endif
    
-//#if defined(LINUX_PLATFORM)// LINUX_PLATFORM
-#else
+#if defined(LINUX_PLATFORM)// LINUX_PLATFORM
+//#else
 
   // build lib.so filename
   char *file_name;
