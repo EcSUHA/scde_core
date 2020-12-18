@@ -21,12 +21,12 @@ based on the Smart Connected Device Engine core extended by
 | zebra stripes | are neat      |    $1 |
   
   
-Programmers can provide
-  * commands and modules for use in Makers IoT-Devices
+Programmers can provide commands and/or modules for use in Makers IoT-Devices
+  * to read sensors, to distribute sensor values, ...
   
-IoT Devices setup is stored in the maker.cfg, IoT Devices state is stored in the state.cfg
+IoT Devices setup is stored in the maker.cfg file, IoT Devices state is stored in the state.cfg.
 
-Embedded Commands (SCDE-Core)
+Embedded Commands (SCDE-Core) are
   * Attr
   * Define
   * Delete
@@ -43,21 +43,26 @@ Embedded Commands (SCDE-Core)
   * Setstate 
   * Shutdown
 
-Embedded Modules (SCDE-Core)
+Embedded Commands
+  * -/-
+  
+Embedded Modules (SCDE-Core) are
   * Global
 
-Embedded Commands (linked in build process, ESP32-Platform)
-  * -/-
+Embedded Commands (in Plaform-Templates)
+  * Reloadmodule (LINUX-Platform)
+  * Reloadcommand (LINUX-Platform) 
 
-Embedded Modules (linked in build process, ESP32-Platform)
-  * Telnet (maintained as Module-Template)
-  * ESP32_DeVICE (maintained as Module-Template)
+Embedded Modules (in Plaform-Templates)
+  * Telnet (maintained as Module-Template)(LINUX-Platform, ESP32-Platform)
+  * ESP32_DeVICE (maintained as Module-Template) (ESP32-Platform)
     
-Additional Commands (loadable module, ESP32-Platform)
-  * loadable modules not supported on platform
+Additional Commands (on request, according to the license)
+  * Reloadmodule (LINUX-Platform)
+  * Reloadcommand (LINUX-Platform) 
 
-Additional Modules (loadable module, ESP32-Platform)
-  * loadable modules not supported on platform
+Additional Modules (on request, according to the license)
+  * -/-
 
 Additional EcSUHA Modules on request (for testing purposes only)
   * ESP32_BH1750       Experimental
@@ -66,5 +71,6 @@ Additional EcSUHA Modules on request (for testing purposes only)
   * ESP32_S0           For S0 counting
   * ESP32_SwITCH       For switchig and PWM with internal ESP32 hardware
  
-  
+NOTE: ESP32-Platform: Modules and Commands are linked in build process by the maker. LINUX-Platform: Supports dynamic Modules and Commands loading.
+
 ---
