@@ -46,9 +46,9 @@ CallGetFnByDefName(const uint8_t *nameText
           && (!strncasecmp((const char*) Common_Definition->name,
 		(const char*) nameText, nameTextLen)) ) {
 
-              if (Common_Definition->module->provided->GetFn) {
+              if (Common_Definition->module->provided->get_fn) {
 
-                  retInt = Common_Definition->module->provided->GetFn(Common_Definition,
+                  retInt = Common_Definition->module->provided->get_fn(Common_Definition,
 			sourceCommon_Definition, X);
               }
 

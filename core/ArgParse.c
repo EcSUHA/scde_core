@@ -391,14 +391,14 @@ ArgParse_PrepareLeadinErrorMsg(struct argparse *self, const struct argparse_opti
 
     // generate concrete error msg - long_name
     self->ret_msg->string.len = asprintf(&self->ret_msg->string.p_char
-        ,"error: option `%s` %s\n" // was `--%s`
+        ,"error: option `%s`, %s\n" // was `--%s`
         ,opt->long_name, reason);
 
   } else {
 
     // generate concrete error msg - short_name
     self->ret_msg->string.len = asprintf(&self->ret_msg->string.p_char
-        ,"error: option `-%c` %s\n"
+        ,"error: option `-%c`, %s\n"
         ,opt->short_name
         ,reason);
   }
@@ -1134,7 +1134,7 @@ ArgParse_Parse(struct argparse *self, int argc, const char **argv)
 
     // generate concrete error msg - long_name
     self->ret_msg->string.len = asprintf(&self->ret_msg->string.p_char
-        ,"error: unknown option `%s`"
+        ,"error: unknown option `%s`\n"
         , self->argv[0]);
 
     ArgParse_Usage(self);

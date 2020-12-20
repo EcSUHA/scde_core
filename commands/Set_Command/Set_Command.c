@@ -215,9 +215,9 @@ Set_CommandFn (const uint8_t *args
 	if ( (Common_Definition->nameLen == nameLen)
 		&& (!strncasecmp((const char*) Common_Definition->name, (const char*) name, nameLen)) ) {
 
-		if (Common_Definition->module->provided->SetFn) {
+		if (Common_Definition->module->provided->set_fn) {
 
-			retMsg = Common_Definition->module->provided->SetFn(Common_Definition, setArgs, setArgsLen);
+			retMsg = Common_Definition->module->provided->set_fn(Common_Definition, setArgs, setArgsLen);
 
 			// got an error msg?
 			if (retMsg) {

@@ -250,7 +250,7 @@ Delete_Command_Fn (const String_t args)
 // -------------------------------------------------------------------------------------------------
 
   // UndefineFn NOT assigned by module ? 
-  if (!p_entry_common_definition->module->provided->Undefine_Fn) {
+  if (!p_entry_common_definition->module->provided->undefine_fn) {
 
 	  // it is allowed to have no Undefine Fn !?
   }
@@ -274,7 +274,7 @@ Delete_Command_Fn (const String_t args)
 
 	  // call Modules Undefine Fn, and get ret msg. Interpret NULL as veto !
 	  Entry_String_t* p_entry_ret_msg =
-		  p_entry_common_definition->module->provided->Undefine_Fn(p_entry_common_definition); //, opt_args);
+		  p_entry_common_definition->module->provided->undefine_fn(p_entry_common_definition); //, opt_args);
 
 	  // got an error msg? -> VETO, cancel delete, return with error msg!
 	  if (p_entry_ret_msg) {

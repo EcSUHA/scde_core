@@ -325,10 +325,10 @@ Define_Command_Fn(const String_t args)
 
   // alloc mem for modul specific definition structure (Entry_Common_Definition_t + X)
   Entry_Common_Definition_t* p_new_entry_common_definition
-	  = malloc(p_module->provided->SizeOfDefinition);
+	  = malloc(p_module->provided->sizeof_custom_definition);
 
   // zero the struct
-  memset(p_new_entry_common_definition, 0, p_module->provided->SizeOfDefinition);
+  memset(p_new_entry_common_definition, 0, p_module->provided->sizeof_custom_definition);
 
 // -------------------------------------------------------------------------------------------------
 
@@ -376,7 +376,7 @@ Define_Command_Fn(const String_t args)
 // -------------------------------------------------------------------------------------------------
 
   // DefineFn NOT assigned by module ? -> retMsg + VETO!
-  if (!p_module->provided->Define_Fn) {
+  if (!p_module->provided->define_fn) {
 
       // alloc mem for ret_msg entry
 	  Entry_String_t* p_entry_ret_msg =
@@ -414,7 +414,7 @@ Define_Command_Fn(const String_t args)
 
 	  // call Modules Define Fn, and get ret msg. Interpret NULL as veto !
 	  Entry_String_t* p_entry_ret_msg = 
-		  p_module->provided->Define_Fn(p_new_entry_common_definition);
+		  p_module->provided->define_fn(p_new_entry_common_definition);
 
 	  // got an error msg? -> VETO, cancel define, clean up in next steps!
 	  if (p_entry_ret_msg) {

@@ -624,7 +624,7 @@ exe    		 my $ret = CallFn($sdev, "StateFn", $d, $tim, $sname, $sval);
 			Entry_String_t *retMsg_Entry_String = NULL;
 
 			// if provided by Type -> call State Fn to set the state
-			if (Common_Definition->module->provided->StateFn) {
+			if (Common_Definition->module->provided->state_fn) {
 
 				#if Setstate_Command_DBG >= 7
 				// prepare TiSt for LogFn
@@ -655,7 +655,7 @@ exe    		 my $ret = CallFn($sdev, "StateFn", $d, $tim, $sname, $sval);
 
 				// call Modules StateFn. Interpret retMsg_Entry_String != NULL as veto !
 				retMsg_Entry_String =
-					Common_Definition->module->provided->StateFn(Common_Definition
+					Common_Definition->module->provided->state_fn(Common_Definition
 						,readingTiSt
 						,stateNameString
 						,stateValueString
@@ -925,7 +925,7 @@ if (stateMimeString.p_char)
 // -------------------------------------------------------------------------------------------------
 
 			// if provided by Type -> call State Fn to set the state
-			if (Common_Definition->module->provided->StateFn) {
+			if (Common_Definition->module->provided->state_fn) {
 
 				#if Setstate_Command_DBG >= 7
 				// prepare TiSt for LogFn
@@ -956,7 +956,7 @@ if (stateMimeString.p_char)
 
 				// call Modules StateFn. Interpret retMsg_Entry_String != NULL as veto !
 				Entry_String_t *retMsg_Entry_String =
-					Common_Definition->module->provided->StateFn(Common_Definition
+					Common_Definition->module->provided->state_fn(Common_Definition
 						,readingTiSt
 						,stateNameString
 						,stateValueString

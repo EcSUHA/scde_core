@@ -432,9 +432,13 @@ typedef struct SCDEFn_s {
 
 
 /*
- * typedefs for Module Functions (callbacks) (provided for SCDE - to execute module Fn),
- * should be only called if not NULL.
- *
+ * typedefs for common Module Functions (callbacks) (provided for SCDE - to execute common module Fn),
+ * Note: Should be only called if not NULL. Assignment of some are mandatory.
+ */
+ 
+
+
+/*
  * InitializeFn  - returns module information (module_s) required for operation
  * DeleteFn      - clean up (delete logfile), called by delete after UndefFn	// wird beim delete aufgerufen um das Device/Gerät endgültig zu löschen
  * ExceptFn      - called if the global select reports an except field
@@ -448,8 +452,6 @@ typedef struct SCDEFn_s {
  * StateFn       - set local info for this device, do not activate anything
  * UndefineFn    - clean up (delete timer, close fd), called by delete and rereadcfg	// Callback wird beim Undefine eines Devices/Gerätes aufgerufen
  */
-//typedef Module_t *Module (* InitializeFn_t)(); // sollte eigentlich so sein
-
 
 
 /*
@@ -480,115 +482,118 @@ typedef struct SCDEFn_s {
 
 
 
-// typedef for AddFn - experimental - provided my module
-typedef strTextMultiple_t* (*AddFn_t)(Entry_Common_Definition_t *p_entry_common_definition, uint8_t *kvArgs, size_t kvArgsLen);
+// typedef for Add_Fn - experimental - provided my module
+typedef strTextMultiple_t* (*Add_Fn_t)(Entry_Common_Definition_t *p_entry_common_definition, uint8_t *kvArgs, size_t kvArgsLen);
 
-// typedef for Attribute Fn - called in case of attribute changes for this definition, to check them
+// typedef for Attribute_Fn - called in case of attribute changes for this definition, to check them
 typedef Entry_String_t* (*Attribute_Fn_t)(Entry_Common_Definition_t* p_entry_common_definition, const String_t attr_command, const String_t attr_name, const String_t attr_value);
 
 // typedef for Define_Fn - called to create a new definition of this type
 typedef Entry_String_t* (*Define_Fn_t)(Entry_Common_Definition_t *p_entry_common_definition);
 
 //
-typedef int (*DeleteFn_t)(Entry_Common_Definition_t *p_entry_common_definition);		
+typedef int (*Delete_Fn_t)(Entry_Common_Definition_t *p_entry_common_definition);		
 
 
 //
-typedef int (*DirectReadFn_t)(Entry_Common_Definition_t *p_entry_common_definition);
+typedef int (*Direct_Read_Fn_t)(Entry_Common_Definition_t *p_entry_common_definition);
 
-// typedef for DirectWriteFn - for 2 stage designs - called to give write job to 1st stage - provided my module
-/*typedef strTextMultiple_t* (* DirectWriteFn_t)(Entry_Common_Definition_t *p_entry_common_definition_Stage1, Entry_Common_Definition_t *p_entry_common_definition_Stage2, Common_StageXCHG_t *Common_StageXCHG);*/
-typedef int (*DirectWriteFn_t)(Entry_Common_Definition_t *p_entry_common_definition);
+// typedef for Direct_Write_Fn - for 2 stage designs - called to give write job to 1st stage - provided my module
+/*typedef strTextMultiple_t* (* Direct_Write_Fn_t)(Entry_Common_Definition_t *p_entry_common_definition_Stage1, Entry_Common_Definition_t *p_entry_common_definition_Stage2, Common_StageXCHG_t *Common_StageXCHG);*/
+typedef int (*Direct_Write_Fn_t)(Entry_Common_Definition_t *p_entry_common_definition);
 
 //
-typedef int (*ExceptFn_t)(Entry_Common_Definition_t *p_entry_common_definition);
+typedef int (*Except_Fn_t)(Entry_Common_Definition_t *p_entry_common_definition);
 
 //
 typedef int (*FingerprintFn_t)(Entry_Common_Definition_t *p_entry_common_definition);
 
-// typedef for GetFn - for 2 stage designs - called to get data from this type - provided my module
-typedef int (*GetFn_t)(Entry_Common_Definition_t *p_entry_common_definition, Entry_Common_Definition_t *sourcep_entry_common_definition, void *X);
+// typedef for Get_Fn - for 2 stage designs - called to get data from this type - provided my module
+typedef int (*Get_Fn_t)(Entry_Common_Definition_t *p_entry_common_definition, Entry_Common_Definition_t *sourcep_entry_common_definition, void *X);
 //typedef int (*GetFn_t)(Common_StageXCHG_t *Common_StageXCHG);
 
 //
-typedef int (*IdleCbFn_t)(Entry_Common_Definition_t *p_entry_common_definition);
+typedef int (*Idle_Cb_Fn_t)(Entry_Common_Definition_t *p_entry_common_definition);
 
 //
-typedef int (*InitializeFn_t)(SCDERoot_t *SCDERoot);
+typedef int (*Initialize_Fn_t)(SCDERoot_t *SCDERoot);
 
 //
-typedef int (*NotifyFn_t)(Entry_Common_Definition_t *p_entry_common_definition);
+typedef int (*Notify_Fn_t)(Entry_Common_Definition_t *p_entry_common_definition);
 
-// typedef for ParseFn - for 2 stage designs - called to give job data to 2nd stage - provided my module
-typedef strTextMultiple_t* (*ParseFn_t)(Common_StageXCHG_t *Common_StageXCHG);
-
-//
-typedef int (*ReadFn_t)(Entry_Common_Definition_t *p_entry_common_definition);
+// typedef for Parse_Fn - for 2 stage designs - called to give job data to 2nd stage - provided my module
+typedef strTextMultiple_t* (*Parse_Fn_t)(Common_StageXCHG_t *Common_StageXCHG);
 
 //
-typedef int (*ReadyFn_t)(Entry_Common_Definition_t *p_entry_common_definition);
+typedef int (*Read_Fn_t)(Entry_Common_Definition_t *p_entry_common_definition);
 
-// typedef for RenameFn - called to inform the definition about its renameing - provided my module
-typedef strTextMultiple_t* (*RenameFn_t)(Entry_Common_Definition_t *p_entry_common_definition, uint8_t *newName, size_t newNameLen, uint8_t *oldName, size_t oldNameLen);
+//
+typedef int (*Ready_Fn_t)(Entry_Common_Definition_t *p_entry_common_definition);
 
-// typedef for SetFn - called to send data to the definition (opposite of Get) - provided my module
-typedef strTextMultiple_t* (*SetFn_t)(Entry_Common_Definition_t *p_entry_common_definition, uint8_t *setArgs, size_t setArgsLen);
+// typedef for Rename_Fn - called to inform the definition about its renameing - provided my module
+typedef strTextMultiple_t* (*Rename_Fn_t)(Entry_Common_Definition_t *p_entry_common_definition, uint8_t *newName, size_t newNameLen, uint8_t *oldName, size_t oldNameLen);
 
-// typedef for ShutdownFn - called to do activities before SCDE shuts down - provided my module
-typedef strTextMultiple_t* (*ShutdownFn_t)(Entry_Common_Definition_t *p_entry_common_definition);
+// typedef for Set_Fn - called to send data to the definition (opposite of Get) - provided my module
+typedef strTextMultiple_t* (*Set_Fn_t)(Entry_Common_Definition_t *p_entry_common_definition, uint8_t *setArgs, size_t setArgsLen);
+
+// typedef for Shutdown_Fn - called to do activities before SCDE shuts down - provided my module
+typedef strTextMultiple_t* (*Shutdown_Fn_t)(Entry_Common_Definition_t *p_entry_common_definition);
 
 // typedef for StateFn - called to set an state for this definition e.g. called from setstate cmd for recovery from save
 //typedef strTextMultiple_t* (*StateFn_t)(Entry_Common_Definition_t *p_entry_common_definition, time_t readingTiSt,
 // uint8_t *readingName, size_t readingNameLen, uint8_t *readingValue, size_t readingValueLen,
 // uint8_t *readingMime, size_t readingMimeLen);
 
-// typedef for StateFn - called to set an state for this definition.
+// typedef for State_Fn - called to set an state for this definition.
 // Normally called from setstate cmd when recovering states from save from save
-typedef Entry_String_t* (*StateFn_t) (Entry_Common_Definition_t *p_entry_common_definition, const time_t stateTiSt, const String_t stateNameString, const String_t stateValueString, const String_t stateMimeString);
+typedef Entry_String_t* (*State_Fn_t) (Entry_Common_Definition_t *p_entry_common_definition, const time_t stateTiSt, const String_t stateNameString, const String_t stateValueString, const String_t stateMimeString);
 
-// typedef for SubFn - experimental - provided my module
-typedef strTextMultiple_t* (*SubFn_t)(Entry_Common_Definition_t *p_entry_common_definition, uint8_t *kArgs, size_t kArgsLen);
+// typedef for Sub_Fn - experimental - provided my module
+typedef strTextMultiple_t* (*Sub_Fn_t)(Entry_Common_Definition_t *p_entry_common_definition, uint8_t *kArgs, size_t kArgsLen);
 
 // typedef for Undefine_Fn - called when an definition is deleted, chance to cleanup - provided my module
 typedef Entry_String_t* (*Undefine_Fn_t)(Entry_Common_Definition_t *p_entry_common_definition);//, String_t opt_args);		
 
-// typedef for WriteFn - called to write data to the definition
-typedef Entry_String_t* (*WriteFn_t) (Entry_Common_Definition_t *p_entry_common_definition, String_t data);
+// typedef for Write_Fn - called to write data to the definition
+typedef Entry_String_t* (*Write_Fn_t) (Entry_Common_Definition_t *p_entry_common_definition, String_t data);
 
 
 /* 
  * Provided by Module (struct)
  * - stores (the common) function callbacks for SCDE module operation
  * - information is sent to SCDE by module, when loaded
- * - done by InitializeFn after module the loaded
+ * - done by Initialize_Fn after the module is loaded
  */
 struct Provided_By_Module_s {
-  uint8_t typeName[32];		    // Type-Name = Module Name
-  size_t typeNameLen;
 
-  AddFn_t AddFn;		        //
-  Attribute_Fn_t Attribute_Fn;	// called in case of attribute changes, to check them
-  Define_Fn_t Define_Fn;		// called to create a new definition of this type
-  DeleteFn_t DeleteFn;		    // deleteDefinitionFn, to cleanup (delete log), called by delete after UndefFn
-  DirectReadFn_t DirectReadFn;	// readDirectFn      , called from select loop to read
-  DirectWriteFn_t DirectWriteFn;// writeDirectFn     , called from select loop to write
-  ExceptFn_t ExceptFn;		    //                   , called if the global select reports an except field
-  GetFn_t GetFn;		        // get some data from this device
-  IdleCbFn_t IdleCbFn;		    //                   , give module an Idle-Callback to process something
-  InitializeFn_t InitializeFn;	// initializeModuleFn, set up module for operation (after load)
-  NotifyFn_t NotifyFn;		    //                   , call this if some device changed its properties
-  ParseFn_t ParseFn;		    //                   , Interpret a new message
-  ReadFn_t ReadFn;		        //                   , Reading / receiving from a Device
-  ReadyFn_t ReadyFn;		    //                   , check for available data, if no FD
-  RenameFn_t RenameFn;		    // renameDefinitionFn, called to inform the definition about its renameing
-  SetFn_t SetFn;		        // setDefinitionFn?  , set/activate this device
-  ShutdownFn_t ShutdownFn;	    //                   ,called before shutdown
-  StateFn_t StateFn;		    //                   ,set local info for this device, do not activate anything
-  SubFn_t SubFn;		        //                   ,called when Attribute-Keys owned by this Module are deleted
-  Undefine_Fn_t Undefine_Fn;	//                   ,clean up (delete timer, close fd), called by delete and rereadcfg
-  WriteFn_t WriteFn;		    //
-  void* CustomFn;		        // ... provided by this Module (non-standard Fn). For other Modules.
-  int SizeOfDefinition;         //sizeOf..// Size of modul specific definition structure (Entry_Common_Definition_t + X)
+//  uint8_t name_char[32];		    // Module Name = Type Name, max 32 characters!
+//  size_t name_len;
+    uint8_t typeName[32];
+    size_t typeNameLen;
+
+  Add_Fn_t add_fn;		            //
+  Attribute_Fn_t attribute_fn;	    // called in case of attribute changes, to check them
+  Define_Fn_t define_fn;		    // called to create a new definition of this type
+  Delete_Fn_t delete_fn;		    // deleteDefinitionFn, to cleanup (delete log), called by delete after UndefFn
+  Direct_Read_Fn_t direct_read_fn;	// readDirectFn      , called from select loop to read
+  Direct_Write_Fn_t direct_write_fn;// writeDirectFn     , called from select loop to write
+  Except_Fn_t except_fn;		    //                   , called if the global select reports an except field
+  Get_Fn_t get_fn;		            // get some data from this device
+  Idle_Cb_Fn_t idle_cb_fn;		    //                   , give module an Idle-Callback to process something
+  Initialize_Fn_t initialize_fn;	// initializeModuleFn, set up module for operation (after load)
+  Notify_Fn_t notify_fn;		    //                   , call this if some device changed its properties
+  Parse_Fn_t parse_fn;		        //                   , Interpret a new message
+  Read_Fn_t read_fn;		        //                   , Reading / receiving from a Device
+  Ready_Fn_t ready_fn;		        //                   , check for available data, if no FD
+  Rename_Fn_t rename_fn;		    // renameDefinitionFn, called to inform the definition about its renameing
+  Set_Fn_t set_fn;		            // setDefinitionFn?  , set/activate this device
+  Shutdown_Fn_t shutdown_fn;        //                   ,called before shutdown
+  State_Fn_t state_fn;		        //                   ,set local info for this device, do not activate anything
+  Sub_Fn_t sub_fn;		            //                   ,called when Attribute-Keys owned by this Module are deleted
+  Undefine_Fn_t undefine_fn;	    //                   ,clean up (delete timer, close fd), called by delete and rereadcfg
+  Write_Fn_t write_fn;		        //
+  void* custom_fn;		            // ... provided by this Module (non-standard Fn). For other Modules.
+  int sizeof_custom_definition;     //sizeOf..// Size of modul specific definition structure (Entry_Common_Definition_t + X)
 };
 
 
@@ -605,7 +610,7 @@ struct Provided_By_Module_s {
  */
 struct Entry_Module_s {
   STAILQ_ENTRY (Entry_Module_s) entries;	// Link to next loaded Module
-  Provided_By_Module_t *provided;				// Ptr to Provided by Module Info
+  Provided_By_Module_t *provided;			// Ptr to Provided by Module Info
   void* lib_handle;							// Handle to this loaded Module
 
  // place  Provided  FNS here direct ?

@@ -310,7 +310,7 @@ Deleteattr_Command2Fn (const String_t args)
 	Entry_String_t* p_entry_ret_msg = NULL;
 
 	// call 'module' 'Attribute_Fn' for this 'definition' to notify - if provided by Type
-	if (p_entry_definition->module->provided->Attribute_Fn) {
+	if (p_entry_definition->module->provided->attribute_fn) {
 
 		// build 'attr_command'
 		String_t attr_command;
@@ -335,7 +335,7 @@ Deleteattr_Command2Fn (const String_t args)
 
 		// call 'module' 'Attribute_Fn', if ret_msg != NULL -> an entry, interpret as veto
 		p_entry_ret_msg =
-			p_entry_definition->module->provided->Attribute_Fn(p_entry_definition,
+			p_entry_definition->module->provided->attribute_fn(p_entry_definition,
 			attr_command,
 			attr_name,
 			attr_value);

@@ -220,9 +220,9 @@ Shutdown_CommandFn (const uint8_t *argsText
   Common_Definition_t *Common_Definition = STAILQ_FIRST(&SCDERoot->HeadCommon_Definitions);
   while (Common_Definition != NULL) {
 
-	if (Common_Definition->module->provided->ShutdownFn) {
+	if (Common_Definition->module->provided->shutdown_fn) {
 
-		retMsg = Common_Definition->module->provided->ShutdownFn(Common_Definition);
+		retMsg = Common_Definition->module->provided->shutdown_fn(Common_Definition);
 
 		// got an error msg?
 		if (retMsg) {

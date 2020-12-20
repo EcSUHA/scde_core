@@ -319,7 +319,7 @@ x.stqh_last = retMsg_Head_String.stqh_last;
 
 
 		// if provided by Type -> call IOWrite Fn to send the pointer
-		if (Common_Definition->module->provided->WriteFn) {
+		if (Common_Definition->module->provided->write_fn) {
 
 			#if IOWrite_Command_DBG >= 7
 			SCDEFn->Log3Fn(IOWrite_ProvidedByCommand.commandNameText
@@ -336,7 +336,7 @@ x.stqh_last = retMsg_Head_String.stqh_last;
 
 			// call Modules IOWriteFn. Interpret retMsg_Entry_String != NULL as veto !
 			Entry_String_t *retMsg_Entry_String =
-				Common_Definition->module->provided->WriteFn(Common_Definition
+				Common_Definition->module->provided->write_fn(Common_Definition
 					,hexData);
 
 			// singly linked tail queue element holding an return message? Insert it in queue.

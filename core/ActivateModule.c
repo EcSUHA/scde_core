@@ -30,7 +30,7 @@ Module_t*
 CommandActivateModule (ProvidedByModule_t* ProvidedByNEWModule)
 {
   // Call the Initialize Function
-  ProvidedByNEWModule->InitializeFn(&SCDERoot);
+  ProvidedByNEWModule->initialize_fn(&SCDERoot);
 
   // prepare new module and store in SCDE root
   Module_t* NewModule;
