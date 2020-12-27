@@ -69,12 +69,13 @@ SCDEFn_t SCDEFn = {
   ,CallGetFnByDefName
   ,CommandReloadModule
   ,Devspec2Array
-  ,FmtDateTime
+  ,Do_Trigger_Fn
   ,FmtTime
   ,GetAllReadings
   ,Get_Def_And_Attr
-  ,GetDefinitionPtrByName
+  ,Get_Ptr_To_Definition_By_Name_Fn
   ,Get_Definitions_That_Match_DefSpec_String
+  ,Get_Formated_Date_Time_Fn
   ,GetLoadedModulePtrByName
   ,GetTiSt
   ,GetUniqueTiSt
@@ -86,10 +87,9 @@ SCDEFn_t SCDEFn = {
   ,Log4
   ,MakeDeviceName
   ,MakeReadingName
-  ,readingsBeginUpdate
-  ,readingsBulkUpdate
-  ,readingsBulkUpdate2
-  ,readingsEndUpdate
+  ,Readings_Begin_Update_Fn
+  ,Readings_Bulk_Update_Fn
+  ,Readings_End_Update_Fn
 
   // buid with : Argument Parser helpers ?
   ,ArgParse_SplitArgsToAllocatedMem

@@ -25,11 +25,11 @@
  *  Rets: Head_Definitions_s -> Pointer to STAILQ head / STAILQ_EMPTY -> no matching definitions
  * --------------------------------------------------------------------------------------------------
  */
-struct Head_Definitions_s
+struct Head_Definition_Ptr_s
 Get_Definitions_That_Match_DefSpec_String(const String_t def_spec)
 {
   // prepare STAILQ head to store entries of 'def_spec.' matching definitions
-  struct Head_Definitions_s head_def_spec_matching_definitions;
+  struct Head_Definition_Ptr_s head_def_spec_matching_definitions;
 
   // Initialize the queue head
   STAILQ_INIT(&head_def_spec_matching_definitions);
@@ -48,11 +48,11 @@ Get_Definitions_That_Match_DefSpec_String(const String_t def_spec)
 			(const char*) def_spec.p_char, def_spec.len)) ) {
 
 		// alloc an definitionMultipleString queue element
-		Entry_Definitions_t* p_entry_def_spec_matching_definition =
-			malloc(sizeof(Entry_Definitions_t));
+		Entry_Definition_Ptr_t* p_entry_def_spec_matching_definition =
+			malloc(sizeof(Entry_Definition_Ptr_t));
 
 		// store ptr to definition into queue entry 
-		p_entry_def_spec_matching_definition->p_entry_definition = 
+		p_entry_def_spec_matching_definition->p_entry_common_definition = 
 			p_definition;
 	
 		// insert 'def-spec' matching queue entry into stail-queue

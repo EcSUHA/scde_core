@@ -1,27 +1,54 @@
+Coding Style for project SCDE:
+
+
+ - don't use tabulators -> tab = 4 spaces
+ - line width should be 100 characters 
+ - indentation 4 chars
+
+
+
+
+
+---------------------------------------------------------------------------------------------------
 Naming conventions for project SCDE:
 
-pointers p_
-struct names   TitleCase ot Title_Case, xxx_s
-typedef's      TitleCase ot Title_Case, xxx_t
-struct Members  lower_case or lowerCase
+int *zeiger4, *zeiger5; 
+int *
+
+pointers       p_xxx, lower_case
+struct names   xxx_s, lower_case
+typedef's      xxx_s, lower_case 
+struct Members  lower_case
 
 Function naming:
-Public functions    pfx_TitleCase (pfx = module prefix)
-Private functions   TitleCase
-Functions that are there, but shouldn't be called directly, or have obscure uses _TitleCase
+Public functions    pfx_xxx, Title_Case (pfx = replaceable module prefix)
+Core functions   Title_Case
+Functions that are there, but shouldn't be called directly, or have obscure uses _Title_Case
 
 _ underscore -> copy & paster helper prefix
 
 Trivial variables   i,x,n,f etc...
-Local variables lower_case or lowerCase
-Global variables    g_lowerCase or g_lower_case (searchable by g_ prefix)
+Local variables lower_case
+Global variables?    g_lower_case (searchable by g_ prefix)
 
-Enum        	ETitleCase
+Enum        	E_Title_Case
 Enum Members    ALL_CAPS
 
 All macros and constants in caps: MAX_BUFFER_SIZE, TRACKING_ID_PREFIX.
+---------------------------------------------------------------------------------------------------
 
+Reserved Names in project SCDE:
+'definition_name' (def-name) , name of an definition 
+'definition_spec' (def-spec) definition specification, search argument for definitions
 
+'p_definition'
+'definition_name'
+'dev_spec'
+'p_attr_name'
+'attr_name'
+'p_attr_value'
+'attr_value'
+'attr_timestamp'
 
 
 under construction:

@@ -11,7 +11,7 @@
 
 
 // the initialize Fn
-int Define_InitializeCommand_Fn(SCDERoot_t* SCDERootptr);
+int Define_Initialize_Command_Fn(SCDERoot_t* SCDERootptr);
 
 // the main command Fn
 struct Head_String_s Define_Command_Fn(const String_t args);

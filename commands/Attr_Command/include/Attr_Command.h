@@ -9,7 +9,7 @@
 
 
 
-int Attr_InitializeCommand_Fn(SCDERoot_t* SCDERootptr);
+int Attr_Initialize_Command_Fn(SCDERoot_t* SCDERootptr);
 
 struct Head_String_s Attr_Command_Fn(const String_t args);
 

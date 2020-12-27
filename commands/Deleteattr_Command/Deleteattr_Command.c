@@ -36,13 +36,12 @@
 #include "Deleteattr_Command.h"
 
 
+// -------------------------------------------------------------------------------------------------
 
 // set default build verbose - if no external override
 #ifndef Deleteattr_Command_DBG  
 #define Deleteattr_Command_DBG  5	// 5 is default
 #endif
-
-
 
 // -------------------------------------------------------------------------------------------------
 
@@ -58,7 +57,7 @@ static SCDEFn_t* p_SCDEFn;
 
 /*
  * -------------------------------------------------------------------------------------------------
- *  DName: Deleteattr_Command
+ *  DName: ProvidedByCommand
  *  Desc: Data 'Provided By Command' for the Deleteattr Command (functions + infos this command provides
  *        to SCDE)
  *  Data: 
@@ -74,10 +73,10 @@ const uint8_t Deleteattr_helpDetailText[] =
 
 
 ProvidedByCommand_t Deleteattr_ProvidedByCommand = {
-  "Deleteattr",					// Command-Name of command -> libfilename.so !
-  10,						// length of cmd
-  Deleteattr_InitializeCommandFn,		// Initialize Fn
-  Deleteattr_CommandFn,				// the Fn code
+  "Deleteattr",					        // Command-Name of command -> libfilename.so !
+  10,						            // length of cmd
+  Deleteattr_Initialize_Command_Fn,		// Initialize Fn
+  Deleteattr_Command_Fn,				// the Fn code
   { &Deleteattr_helpText, sizeof(Deleteattr_helpText) },
   { &Deleteattr_helpDetailText, sizeof(Deleteattr_helpDetailText) }
 };
@@ -85,7 +84,7 @@ ProvidedByCommand_t Deleteattr_ProvidedByCommand = {
 
 
 /* --------------------------------------------------------------------------------------------------
- *  FName: Deleteattr - Initialize Command Funktion
+ *  FName: Initialize_Command_Fn
  *  Desc: Initializion of an (new loaded) SCDE-Command. Init p_SCDERoot and p_SCDE Function Callbacks.
  *  Info: Called only once befor use!
  *  Para: SCDERoot_t* p_SCDERoot_from_core -> ptr to SCDE Data Root from SCDE-Core
@@ -93,7 +92,7 @@ ProvidedByCommand_t Deleteattr_ProvidedByCommand = {
  *--------------------------------------------------------------------------------------------------
  */
 int 
-Deleteattr_InitializeCommandFn(SCDERoot_t* p_SCDERoot_from_core)
+Deleteattr_Initialize_Command_Fn(SCDERoot_t* p_SCDERoot_from_core)
 {
   // make data root locally available
   p_SCDERoot = p_SCDERoot_from_core;
@@ -117,65 +116,32 @@ Deleteattr_InitializeCommandFn(SCDERoot_t* p_SCDERoot_from_core)
 
 
 
-
-
-
-// conversion to V2
-struct headRetMsgMultiple_s
-Deleteattr_CommandFn (const uint8_t* p_args
-		,const size_t args_len)
-{
-  // temporary conversion to make ready -> const String_t args
-  String_t args;
-  args.p_char = p_args;
-  args.len = args_len;
-
-
-// temporary conversion to make ready ->  head_ret_msg
-  struct Head_String_s head_ret_msg
-  	 = Deleteattr_Command2Fn(args);
-
-
-  struct headRetMsgMultiple_s x;
-  STAILQ_INIT(&x);
-  x.stqh_first =  head_ret_msg.stqh_first;
-  x.stqh_last =  head_ret_msg.stqh_last;
-  return x; 
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+/*
+ * Note: 'definition_name' is fixed, 'definition_spec' is an definition specification search argument !
+ */
+ 
+ 
+ 
 /* -------------------------------------------------------------------------------------------------
- *  FName: Deleteattr - The Command main Fn
+ *  FName: Command_Fn
  *  Desc: Tries to delete Attributes from definition-specification matching Definitions.
  *        Then calls modules AttributeFn with cmd=del, retMsg.strText != NULL -> module sends veto.
- *  Info: 'def_spec' is the definition specification, the input for the definition names
+ *  Info: 'definition_spec' is the definition specification, the input for the definition names
  *                   matching query. For all matching Definitions this attribute will be deleted.
- *  Para: const String_t args -> space seperated command args string "def_spec attr_name"
+ *  Para: const String_t args -> space seperated command args string "definition_spec attr_name"
  *  Rets: struct Head_String_s -> STAILQ head of multiple retMsg, if NULL -> no retMsg
  * -------------------------------------------------------------------------------------------------
  */
 struct Head_String_s
-Deleteattr_Command2Fn (const String_t args)
+Deleteattr_Command_Fn (const String_t args)
 {
   #if Deleteattr_Command_DBG >= 7
   p_SCDEFn->Log3Fn(Deleteattr_ProvidedByCommand.commandNameText
-	,Deleteattr_ProvidedByCommand.commandNameTextLen
-	,7
-	,"CommandFn called with args '%.*s'"
-	,args.len
-	,args.p_char);
+	  ,Deleteattr_ProvidedByCommand.commandNameTextLen
+	  ,7
+	  ,"CommandFn called with args '%.*s'"
+	  ,args.len
+	  ,args.p_char);
   #endif
 
 // --------------------------------------------------------------------------------------------------
@@ -188,61 +154,62 @@ Deleteattr_Command2Fn (const String_t args)
 
 // --------------------------------------------------------------------------------------------------
 
-  // expected argument #1
-  String_t def_spec;
-
-  // set * to start of possible def-spec text (seek-start-pos)
-  def_spec.p_char = args.p_char;
-
   // the total seek-counter
   int i = 0;
-	
+
+  // expected argument #1
+  String_t definition_spec;
+
+  // set * to start of possible 'definition_spec' text (seek-start-pos)
+  definition_spec.p_char = args.p_char;
+  
   // an element seek-counter
   int j = 0;
   
-  // seek * to start of  def-spec text ('\32' after space)
-  while( ( i < args.len ) && ( *def_spec.p_char == ' ' ) ) { i++ ; def_spec.p_char++ ; }
-
-  // 1 @ finnished
+  // seek * to start of 'definition_spec' text ('\32' after space)
+  while( ( i < args.len ) && ( *definition_spec.p_char == ' ' ) ) { i++ ; definition_spec.p_char++ ; }
 
   // expected argument #2
   String_t attr_name;
 
-  // set * to start of possible attr-name text (seek-start-pos)
-  attr_name.p_char = def_spec.p_char;
+  // take *, it is at 'definition_spec' text start (seek-start-pos)
+  attr_name.p_char = definition_spec.p_char;
 
-  // seek to next space '\32'
+  // seek * to end of previous args text (to next '\32' -> space)
   while( ( i < args.len ) && ( *attr_name.p_char != ' ' ) ) { i++, j++ ; attr_name.p_char++ ; }
 
-  // length of def-spec text determined
-  def_spec.len = j;
+  // length of previous args text ('definition_spec') determined
+  definition_spec.len = j;
 
-  // seek * to start of attr-name text ('\32' after space)
+  // seek * to start of 'attr_name' text ('\32' after space)
   while( ( i < args.len ) && ( *attr_name.p_char == ' ' ) ) { i++ ; attr_name.p_char++ ; }
 
-  // 2 @ finnished
-
-  // no further arguments expected - searching the end of text
-  String_t end_of_text;
+  // no further arguments expected - search for more args to generate error msg
+  String_t more_args;
 	
-  // set start * of possible 'end of text' seek-start-pos
-  end_of_text.p_char = attr_name.p_char;
+  // take *, it is at 'attr_value' text start (seek-start-pos)
+  more_args.p_char = attr_name.p_char;
 	
   // clear element seek-counter
   j = 0;
 
-  // seek to next space '\32'
-  while( ( i < args.len ) && ( *end_of_text.p_char != ' ' ) ) { i++ , j++ ; end_of_text.p_char++ ; }
+  // seek * to end of previous args text (to next '\32' -> space)
+  while( ( i < args.len ) && ( *more_args.p_char != ' ' ) ) { i++ , j++ ; more_args.p_char++ ; }
 
-  // length of attr-Val text determined
+  // length of previous args text ('attr_value') determined
   attr_name.len = j;
-
-  // @ 'p_end_of_text' ! No further processing ...
+  
+  // seek * to start of 'more_args' ('\32' after space)
+  while( ( i < args.len ) && ( *more_args.p_char == ' ' ) ) { i++ ; more_args.p_char++ ; }
+  // length of 'more_args' text determined (IN THIS CASE IT IS THE REST)
+  more_args.len = args.len - i;
+  
+  // 'more_args' may end with spaces ...
 
 // -------------------------------------------------------------------------------------------------
 
-  // verify lengths > 0, ATTR_VAL_LEN = 0 ALLOWED!
-  if ( ( def_spec.len == 0 ) || ( attr_name.len == 0 ) ) {
+  // verify lengths > 0, NO MORE ARGS!
+  if ( ( definition_spec.len == 0 ) || ( attr_name.len == 0 ) || ( more_args.len) ) {
 
 	// alloc mem for retMsg
 	Entry_String_t* p_entry_ret_msg =
@@ -263,36 +230,36 @@ Deleteattr_Command2Fn (const String_t args)
 
 // -------------------------------------------------------------------------------------------------
 
-  // get all 'definition' that match 'def_spec'. Result returned as SLTQ head.
-  struct Head_Definitions_s head_dev_spec_matching_definitions =
-	p_SCDEFn->Get_Definitions_That_Match_DefSpec_String_Fn(def_spec);
+  // get all 'definition' that match 'definition_spec'. Result returned as SLTQ head.
+  struct Head_Definition_Ptr_s head_dev_spec_matching_definitions =
+	  p_SCDEFn->Get_Definitions_That_Match_DefSpec_String_Fn(definition_spec);
 
 // -------------------------------------------------------------------------------------------------
 
   // start processing, load first returned entry 'definition'
-  Entry_Definitions_t* p_entry_dev_spec_matching_definitions = 
-	STAILQ_FIRST(&head_dev_spec_matching_definitions);
+  Entry_Definition_Ptr_t* p_entry_dev_spec_matching_definitions = 
+	  STAILQ_FIRST(&head_dev_spec_matching_definitions);
 
   String_t attr_value = {(uint8_t*) NULL, 0};
 
-  // no entry for definitions that match requested 'def_spec' ? We should throw out an error!
+  // no entry for definitions that match requested 'definition_spec' ? We should throw out an error!
   if ( p_entry_dev_spec_matching_definitions == NULL ) {
 
-	// alloc mem for retMsg
-	Entry_String_t* p_entry_ret_msg =
-		 malloc(sizeof(Entry_String_t));
+	  // alloc mem for retMsg
+	  Entry_String_t* p_entry_ret_msg =
+	      malloc(sizeof(Entry_String_t));
 
-	// response with error text
-	p_entry_ret_msg->string.len = asprintf(&p_entry_ret_msg->string.p_char,
-		"Could not find an <def-spec> matching definition! Check '%.*s'!",
-		def_spec.len,
-		def_spec.p_char);
+	  // response with error text
+	  p_entry_ret_msg->string.len = asprintf(&p_entry_ret_msg->string.p_char,
+		  "Could not find an <def-spec> matching definition! Check '%.*s'!",
+		  definition_spec.len,
+		  definition_spec.p_char);
 
-	// insert ret_msg as entry in stail-queue
-	STAILQ_INSERT_TAIL(&head_ret_msg, p_entry_ret_msg, entries);
+	  // insert ret_msg as entry in stail-queue
+	  STAILQ_INSERT_TAIL(&head_ret_msg, p_entry_ret_msg, entries);
 
-  	// return head of singly linked tail queue, which holds 'ret_msg' elements
-  	return head_ret_msg;
+      // return head of singly linked tail queue, which holds 'ret_msg' elements
+      return head_ret_msg;
   }
 
 // -------------------------------------------------------------------------------------------------
@@ -303,14 +270,14 @@ Deleteattr_Command2Fn (const String_t args)
 // -------------------------------------------------------------------------------------------------
 
 	// get the ptr to the current 'definition'
-	Common_Definition_t* p_entry_definition = 
-		p_entry_dev_spec_matching_definitions->p_entry_definition;
+	Entry_Common_Definition_t* p_entry_common_definition = 
+		p_entry_dev_spec_matching_definitions->p_entry_common_definition;
 
 	// to store the ret_msg from AttributeFn
 	Entry_String_t* p_entry_ret_msg = NULL;
 
 	// call 'module' 'Attribute_Fn' for this 'definition' to notify - if provided by Type
-	if (p_entry_definition->module->provided->attribute_fn) {
+	if (p_entry_common_definition->module->provided->attribute_fn) {
 
 		// build 'attr_command'
 		String_t attr_command;
@@ -323,10 +290,10 @@ Deleteattr_Command2Fn (const String_t args)
 			7,
 			"Calling AttributeFN for definition '%.*s' (modul '%.*s') with args "
 			"attr_command '%.*s' attr_name '%.*s' attr_value '%.*s'",
-			p_entry_definition->nameLen,
-			p_entry_definition->name,
-			p_entry_definition->module->provided->typeNameLen,
-			p_entry_definition->module->provided->typeName,
+			p_entry_common_definition->nameLen,
+			p_entry_common_definition->name,
+			p_entry_common_definition->module->provided->typeNameLen,
+			p_entry_common_definition->module->provided->typeName,
 			attr_command.len,
 			attr_command.p_char,
   			attr_name.len,
@@ -335,7 +302,7 @@ Deleteattr_Command2Fn (const String_t args)
 
 		// call 'module' 'Attribute_Fn', if ret_msg != NULL -> an entry, interpret as veto
 		p_entry_ret_msg =
-			p_entry_definition->module->provided->attribute_fn(p_entry_definition,
+			p_entry_common_definition->module->provided->attribute_fn(p_entry_common_definition,
 			attr_command,
 			attr_name,
 			attr_value);
@@ -352,10 +319,10 @@ Deleteattr_Command2Fn (const String_t args)
 			7,
 			"No AttributeFN available for definition '%.*s' (modul '%.*s') "
 			" attr_name '%.*s' with attr_value '%.*s' will be assigned without check.",
-			p_entry_definition->nameLen,
-			p_entry_definition->name,
-			p_entry_definition->module->provided->typeNameLen,
-			p_entry_definition->module->provided->typeName,
+			p_entry_common_definition->nameLen,
+			p_entry_common_definition->name,
+			p_entry_common_definition->module->provided->typeNameLen,
+			p_entry_common_definition->module->provided->typeName,
   			attr_name.len,
 			attr_name.p_char,
 			attr_value.len,
@@ -377,17 +344,17 @@ Deleteattr_Command2Fn (const String_t args)
 			7,
 			"Got an veto msg from AttributeFN for definition '%.*s' (modul '%.*s'). "
 			"Attribute attr_name '%.*s' with attr_value '%.*s' NOT deleted!",
-			p_entry_definition->nameLen,
-			p_entry_definition->name,
-			p_entry_definition->module->provided->typeNameLen,
-			p_entry_definition->module->provided->typeName,
+			p_entry_common_definition->nameLen,
+			p_entry_common_definition->name,
+			p_entry_common_definition->module->provided->typeNameLen,
+			p_entry_common_definition->module->provided->typeName,
   			attr_name.len,
 			attr_name.p_char,
 			attr_value.len,
 			attr_value.p_char);
 		#endif
 
-		// load next entry of 'def_spec' matching definitions
+		// load next entry of 'definition_spec' matching definitions
 		p_entry_dev_spec_matching_definitions = 
 			STAILQ_NEXT(p_entry_dev_spec_matching_definitions, entries);
 
@@ -403,7 +370,7 @@ Deleteattr_Command2Fn (const String_t args)
 
 	// get first entry from our 'attr_value' list
   	Entry_Attr_Value_t* p_entry_attr_value = 
-		LIST_FIRST(&p_entry_definition->head_attr_value);
+		LIST_FIRST(&p_entry_common_definition->head_attr_value);
 
   	// search the lists 'attr_name' entries for the requested 'attr_name'
  	while ( p_entry_attr_name != NULL ) {
@@ -457,16 +424,16 @@ Deleteattr_Command2Fn (const String_t args)
 			"failed! It is NOT assigned!",
 			attr_name.len,
 			attr_name.p_char,
-			p_entry_definition->nameLen,
-			p_entry_definition->name,
-			p_entry_definition->module->provided->typeNameLen,
-			p_entry_definition->module->provided->typeName);
+			p_entry_common_definition->nameLen,
+			p_entry_common_definition->name,
+			p_entry_common_definition->module->provided->typeNameLen,
+			p_entry_common_definition->module->provided->typeName);
 
 		// insert ret_msg as entry in stail-queue
 		STAILQ_INSERT_TAIL(&head_ret_msg, p_entry_ret_msg, entries);
 
 
-		// load next entry of 'def_spec' matching definitions
+		// load next entry of 'definition_spec' matching definitions
 		p_entry_dev_spec_matching_definitions = 
 			STAILQ_NEXT(p_entry_dev_spec_matching_definitions, entries);
 
@@ -489,10 +456,10 @@ Deleteattr_Command2Fn (const String_t args)
 			p_entry_attr_name->attr_name.p_char,
 			p_entry_attr_value->attr_value.len,
 			p_entry_attr_value->attr_value.p_char,
-			p_entry_definition->nameLen,
-			p_entry_definition->name,
-			p_entry_definition->module->provided->typeNameLen,
-			p_entry_definition->module->provided->typeName);
+			p_entry_common_definition->nameLen,
+			p_entry_common_definition->name,
+			p_entry_common_definition->module->provided->typeNameLen,
+			p_entry_common_definition->module->provided->typeName);
 		#endif
 
 		// remove 'attr_value' entry from the 'attr_value' list
@@ -511,15 +478,15 @@ Deleteattr_Command2Fn (const String_t args)
 		// check if current 'attr_name' entry is no longer in use (can be removed)
 	
 		// get first entry from our 'definition' list
-  		Common_Definition_t* p_entry_definition = 
+  		Entry_Common_Definition_t* p_entry_common_definition = 
 			STAILQ_FIRST(&p_SCDERoot->HeadCommon_Definitions);
 
  		// search the lists 'definition' entries for the requested 'definition'
- 		while ( p_entry_definition != NULL ) {
+ 		while ( p_entry_common_definition != NULL ) {
 
 			// get first entry from our 'attr_value' list
   			Entry_Attr_Value_t* p_entry_attr_value = 
-				LIST_FIRST(&p_entry_definition->head_attr_value);
+				LIST_FIRST(&p_entry_common_definition->head_attr_value);
 
   			// search the lists 'attr_value' entries for the requested 'attr_name'
  			while ( p_entry_attr_value != NULL ) {
@@ -536,12 +503,12 @@ Deleteattr_Command2Fn (const String_t args)
 			}
 
 			// load next 'definition' entry to process it
-			p_entry_definition = STAILQ_NEXT(p_entry_definition, entries);
+			p_entry_common_definition = STAILQ_NEXT(p_entry_common_definition, entries);
  		 }
 
 		// no entry for requested 'attr_name' or 'attr_value' ? 
 		// -> delete 'attr_name' entry, its not longer in use - fee it
-  		if ( p_entry_attr_value == NULL || p_entry_definition == NULL ) {
+  		if ( p_entry_attr_value == NULL || p_entry_common_definition == NULL ) {
 
 			// remove 'attr_name' entry from the 'attr_name' list
 			LIST_REMOVE(p_entry_attr_name, entries);
@@ -556,7 +523,7 @@ Deleteattr_Command2Fn (const String_t args)
 
 // -------------------------------------------------------------------------------------------------
 
-  	// load next entry of def_spec matching definitions
+  	// load next entry of definition_spec matching definitions
   	p_entry_dev_spec_matching_definitions = 
 		STAILQ_NEXT(p_entry_dev_spec_matching_definitions, entries);
   }
@@ -566,5 +533,6 @@ Deleteattr_Command2Fn (const String_t args)
   // return head of singly linked tail queue, which holds 'ret_msg' elements
   return head_ret_msg;
 }
+
 
 

@@ -259,14 +259,14 @@ strBufferLen = 3000;
 						,"                                ");
 
 					// the state
-					if ( Common_Definition->state) {
+					if ( Common_Definition->state_reading_value.p_char) {
 
 						// we have a state
 						strBufferOffset += snprintf(wBufStart + strBufferOffset
 						,strBufferLen
 						,"%.*s)\r\n"
-						,Common_Definition->stateLen
-						,Common_Definition->state);
+						,Common_Definition->state_reading_value.len
+						,Common_Definition->state_reading_value.p_char);
 
 					}
 
@@ -403,8 +403,8 @@ retMsg->strTextLen = strBufferLen;
 				,"  DEF%.*s %.*s\r\n"
 				,10-3 //DEF LEN
 				,"                                "
-				,Common_Definition->definitionLen
-				,Common_Definition->definition);
+				,Common_Definition->definition.len
+				,Common_Definition->definition.p_char);
 
 			// add NAME
 			strBufferOffset += snprintf(wBufStart + strBufferOffset
@@ -429,24 +429,24 @@ retMsg->strTextLen = strBufferLen;
 				,"  Readings:\r\n");
 			
 			// list readings stored for definition after processing
-			xReadingSLTQE_t *currentReadingsSLTQE;
-			STAILQ_FOREACH(currentReadingsSLTQE, &Common_Definition->headReadings, entries) {
+			Entry_Reading_t *currentReadingsSLTQE;
+			STAILQ_FOREACH(currentReadingsSLTQE, &Common_Definition->head_readings, entries) {
 
 				// get tist text
-				strText_t strText =
-					SCDEFn->FmtDateTimeFn(currentReadingsSLTQE->readingTist);
+				string_t strText =
+					SCDEFn->get_formated_date_time_fn(currentReadingsSLTQE->reading.time);
 
 					strBufferOffset += snprintf(wBufStart + strBufferOffset
 						,strBufferLen
 						,"  %.*s | %.*s = %.*s\r\n"
-						,strText.strTextLen
-						,strText.strText
-						,currentReadingsSLTQE->nameString.len
-						,currentReadingsSLTQE->nameString.p_char
-						,currentReadingsSLTQE->valueString.len
-						,currentReadingsSLTQE->valueString.p_char);
+						,strText.len
+						,strText.p_char
+						,currentReadingsSLTQE->reading.name.len
+						,currentReadingsSLTQE->reading.name.p_char
+						,currentReadingsSLTQE->reading.value.len
+						,currentReadingsSLTQE->reading.value.p_char);
 
-				free(strText.strText);
+				free(strText.p_char);
 
 			}
 
@@ -456,8 +456,8 @@ retMsg->strTextLen = strBufferLen;
 				,"  STATE%.*s %.*s\r\n"
 				,10-4 //STATE LEN
 				,"                                "
-				,Common_Definition->stateLen
-				,Common_Definition->state);
+				,Common_Definition->state_reading_value.len
+				,Common_Definition->state_reading_value.p_char);
 
 			// add TYPE
 			strBufferOffset += snprintf(wBufStart + strBufferOffset

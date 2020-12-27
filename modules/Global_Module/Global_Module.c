@@ -149,8 +149,8 @@ Global_Define(Common_Definition_t *Common_Definition)//, const char *Definition)
 
   #if SCDEH_DBG >= 5
   printf("\n|Global_Def, Def:%.*s>"
-	,Global_Definition->common.definitionLen
-	,Global_Definition->common.definition);
+	,Global_Definition->common.definition.len
+	,Global_Definition->common.definition.p_char);
   #endif
 
 // -------------------------------------------------------------------------------------------

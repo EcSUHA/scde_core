@@ -39,6 +39,10 @@ void InitA();
  * AND made accessible for calling by modules and commands (for SCDE operation and helpers )
  */
 
+
+// adds an event as entry_event_t to the changed-readings List
+void Add_Event_Fn(Entry_Common_Definition_t *p_entry_common_definition, const string_t notify_name, const string_t notify_value, const time_t timestamp);
+
 // analyzes + processes one command row
 //struct headRetMsgMultiple_s AnalyzeCommand(const uint8_t *args, const size_t argsLen);
 struct Head_String_s AnalyzeCommand(const String_t args);
@@ -53,11 +57,22 @@ int CallGetFnByDefName(const uint8_t *nameText, const size_t nameTextLen, Common
 // Initially loads or executes a reload of an Module of given type-name
 Module_t* CommandReloadModule(const String_t type_name);
 
-// returns all definitions that match devspec
-struct Head_String_s Devspec2Array(const String_t devspecString);
+// creates the notify list (should be empty when calling!)
+void Create_Notify_List_Fn();
 
-// returns formated text of Date-Time from tist
-strText_t FmtDateTime(time_t tiSt);
+
+// returns all definitions that match 'def-spec'
+struct Head_String_s Devspec2Array(const String_t devspecString);
+//struct Head_String_s Definition_Specifications_2_List(const String_t def_spec);
+
+// deletes the notify list (if any)
+void Delete_Notify_List_Fn();
+
+//
+Entry_String_t* Do_Trigger_Fn(Entry_Common_Definition_t *p_entry_common_definition, entry_notify_t *p_changed_state);
+
+// evaluates the state-reading embedded in each definition
+void Eval_State_Format_Fn(Entry_Common_Definition_t *p_entry_common_definition);
 
 // returns formated text of Time from tist
 strText_t FmtTime(time_t tiSt);
@@ -69,10 +84,13 @@ struct headRetMsgMultiple_s GetAllReadings (Common_Definition_t *Common_Definiti
 struct Head_String_s Get_Def_And_Attr (Entry_Definition_t* p_entry_definition);
 
 //
-Common_Definition_t* GetDefinitionPtrByName(const size_t definitionNameLen, const uint8_t *definitionName);
+Common_Definition_t * Get_Ptr_To_Definition_By_Name_Fn(const String_t definition_name);
 
 // Returns a STAILQ head that stores entries of all 'dev_spec' matching definitions
-struct Head_Definitions_s Get_Definitions_That_Match_DefSpec_String(const String_t dev_spec);
+struct Head_Definition_Ptr_s Get_Definitions_That_Match_DefSpec_String(const String_t dev_spec);
+
+// returns formated text of Date-Time from tist
+string_t Get_Formated_Date_Time_Fn(time_t timestamp);
 
 //
 Module_t* GetLoadedModulePtrByName(const uint8_t *typeName, const size_t typeNameLen);
@@ -108,17 +126,19 @@ void MakeDeviceName(const String_t nameString);
 void MakeReadingName(const String_t nameString);
 
 // call this before updating readings
-int readingsBeginUpdate(Common_Definition_t *Common_Definition);
+time_t Readings_Begin_Update_Fn(Entry_Common_Definition_t *p_entry_common_definition);
 
 // call this to add an Reading to the running update of Readings
-int readingsBulkUpdate(Common_Definition_t *Common_Definition, uint8_t *readingNameText, size_t readingNameTextLen, uint8_t *readingValueText, size_t readingValueTextLen);
-
-// call this to add an Reading to the running update of Readings
-int readingsBulkUpdate2(Common_Definition_t *Common_Definition, const size_t readingNameStringLength, const uint8_t *readingNameStringCharacters, const size_t readingValueStringLength, const uint8_t *readingValueStringCharacters,const bool changed);
-
+int Readings_Bulk_Update_Fn(Entry_Common_Definition_t *p_entry_common_definition, const String_t reading_name, const String_t reading_value, const bool changed, time_t timestamp);
+    
 // call this to after bulk-update to process readings
-int readingsEndUpdate(Common_Definition_t *Common_Definition, bool doTrigger);
+int Readings_End_Update_Fn(Common_Definition_t *Common_Definition, bool doTrigger);
 
+// removes definitions from the notify list. Faster then generating new list.
+void Remove_From_Notify_List_Fn(Entry_Definition_t *p_entry_common_definition);
+
+// Sets an reading with value and update time in given definition
+void Set_Readings_Value_Fn(Entry_Common_Definition_t *p_entry_common_definition, const String_t reading_name, const String_t reading_value, const time_t timestamp);
 
 // The argument parser
   // Argument Parser - Split Arguments To Allocated Mememory Fn

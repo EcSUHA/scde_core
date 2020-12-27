@@ -56,7 +56,7 @@ static SCDEFn_t* p_SCDEFn;
 
 
 /* -------------------------------------------------------------------------------------------------
- *  DName: Delete_ProvidedByCommand
+ *  DName: ProvidedByCommand
  *  Desc: Data 'Provided By Command' for this Command (functions + infos this command provides
  *        to SCDE)
  *  Data: 
@@ -72,7 +72,7 @@ const uint8_t Delete_helpDetailText[] =
 ProvidedByCommand_t Delete_ProvidedByCommand = {
   "Delete",					        // Command-Name of command -> libfilename.so !
   6,						        // length of cmd
-  Delete_InitializeCommand_Fn,		// Initialize Fn
+  Delete_Initialize_Command_Fn,		// Initialize Fn
   Delete_Command_Fn,				// the Fn code
   { &Delete_helpText, sizeof(Delete_helpText) },
   { &Delete_helpDetailText, sizeof(Delete_helpDetailText) }
@@ -81,7 +81,7 @@ ProvidedByCommand_t Delete_ProvidedByCommand = {
 
 
 /* -------------------------------------------------------------------------------------------------
- *  FName: Delete_InitializeCommand_Fn
+ *  FName: Initialize_Command_Fn
  *  Desc: Initializion of an (new loaded) SCDE-Command. Init p_SCDERoot and p_SCDE Function Callbacks.
  *  Info: Called only once befor use!
  *  Para: SCDERoot_t* p_SCDERoot_from_core -> ptr to SCDE Data Root from SCDE-Core
@@ -89,7 +89,7 @@ ProvidedByCommand_t Delete_ProvidedByCommand = {
  *--------------------------------------------------------------------------------------------------
  */
 int
-Delete_InitializeCommand_Fn(SCDERoot_t* p_SCDERoot_from_core)
+Delete_Initialize_Command_Fn(SCDERoot_t* p_SCDERoot_from_core)
 {
   // make data root locally available
   p_SCDERoot = p_SCDERoot_from_core;
@@ -114,7 +114,7 @@ Delete_InitializeCommand_Fn(SCDERoot_t* p_SCDERoot_from_core)
 
 
 /* -------------------------------------------------------------------------------------------------
- *  FName: Delete_Command_Fn
+ *  FName: Command_Fn
  *  Desc: Deletes (undefines) a Definition by calling Modules UndefineFn to do further module-specific
  *        deinitialization. Finally cleans up common values, including the definition.
  *  Info: 'Definition-Name' is custom Definition name. Allowed: [azAZ09._], uint8_t[32]
@@ -166,16 +166,13 @@ Delete_Command_Fn (const String_t args)
   // expected argument #2
   String_t opt_args;
 
-  // take * to start searching 'opt_args' text (seek-start-pos)
+  // take *, it is at 'definition_name' text start (seek-start-pos)
   opt_args.p_char = definition_name.p_char;
 
-  // clear element seek-counter
-  j = 0;
-
-  // seek * to end of previous args text (to next '\32' -> space)
+  // seek * to end of previous args text ('definition_name') (to next '\32' -> space)
   while( ( i < args.len ) && ( *opt_args.p_char != ' ' ) ) { i++ , j++ ; opt_args.p_char++ ; }
 
-  // length of 'module_name' text determined
+  // length of previous args text 'definition_name' determined
   definition_name.len = j;
 
   // seek * to start of 'opt_args' (skip '\32' -> space)
@@ -195,7 +192,7 @@ Delete_Command_Fn (const String_t args)
 
 	  // response with error text
 	  p_entry_ret_msg->string.len = asprintf(&p_entry_ret_msg->string.p_char,
-		  "Error! Could not interpret '%.*s'! Usage: Define <definition-name> [<type dependent arguments>]",
+		  "Error! Could not interpret '%.*s'! Usage: Define <def-name> [<type dependent arguments>]",
 		  args.len,
 		  (char *)args.p_char);
 
@@ -295,7 +292,7 @@ Delete_Command_Fn (const String_t args)
   // now do the common cleanup
 
   // free the initial state '???' - may be NULL now!
-  if (p_entry_common_definition->state) free(p_entry_common_definition->state);
+  if (p_entry_common_definition->state_reading_value.p_char) free(p_entry_common_definition->state_reading_value.p_char);
 
   // check for Readings here, and free if any
   // !!! to do
@@ -304,7 +301,8 @@ Delete_Command_Fn (const String_t args)
   // !!! to do
 
   // free the 'definition' string - may be NULL!
-  if (p_entry_common_definition->def.p_char) free(p_entry_common_definition->def.p_char);
+  if (p_entry_common_definition->definition.p_char) 
+      free(p_entry_common_definition->definition.p_char);
 
   // free the custom 'name' - is NOT NULL!
   free(p_entry_common_definition->nname.p_char);

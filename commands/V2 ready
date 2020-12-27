@@ -2,10 +2,10 @@
 
               Define_Command -< guide!
               Delete_Command  
-            
+           Attr_Command
+           Deleteattr_Command
+Trigger?      
      Include_Command
-   Attr_Command
- Deleteattr_Command
 
 schlechter, aber ok
 Setstate_Command

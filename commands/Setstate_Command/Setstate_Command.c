@@ -628,8 +628,8 @@ exe    		 my $ret = CallFn($sdev, "StateFn", $d, $tim, $sname, $sval);
 
 				#if Setstate_Command_DBG >= 7
 				// prepare TiSt for LogFn
-				strText_t strText =
-  					SCDEFn->FmtDateTimeFn(readingTiSt);
+				string_t strText =
+  					SCDEFn->get_formated_date_time_fn(readingTiSt);
 
 				SCDEFn->Log3Fn(Setstate_ProvidedByCommand.commandNameText
 		  			,Setstate_ProvidedByCommand.commandNameTextLen
@@ -646,11 +646,11 @@ exe    		 my $ret = CallFn($sdev, "StateFn", $d, $tim, $sname, $sval);
 					,stateValueString.p_char
 					,stateMimeString.len
 					,stateMimeString.p_char
-					,strText.strTextLen
-					,strText.strText);
+					,strText.len
+					,strText.p_char);
 
 				// free TiSt from LogFn
-				free(strText.strText);
+				free(strText.p_char);
 				#endif
 
 				// call Modules StateFn. Interpret retMsg_Entry_String != NULL as veto !
@@ -701,8 +701,8 @@ exe    		 my $ret = CallFn($sdev, "StateFn", $d, $tim, $sname, $sval);
 				// Loop through old readings and
 				// try to find an old reading and replace it.
 				// Or add the new reading.
-				xReadingSLTQE_t *oldReadingsSLTQE = 
-					STAILQ_FIRST(&Common_Definition->headReadings);
+				Entry_Reading_t *oldReadingsSLTQE = 
+					STAILQ_FIRST(&Common_Definition->head_readings);
 
 				while (true) {
 
@@ -710,41 +710,41 @@ exe    		 my $ret = CallFn($sdev, "StateFn", $d, $tim, $sname, $sval);
 					if (oldReadingsSLTQE == NULL) {
 
 						// alloc mem for new Reading 
-						xReadingSLTQE_t *newReadingsSLTQE
-							= malloc(sizeof(xReadingSLTQE_t));
+						Entry_Reading_t *newReadingsSLTQE
+							= malloc(sizeof(Entry_Reading_t));
 
 						// zero the struct
-						memset(newReadingsSLTQE, 0, sizeof(xReadingSLTQE_t));
+						memset(newReadingsSLTQE, 0, sizeof(Entry_Reading_t));
 
 						// fill Reading
-						newReadingsSLTQE->readingTist = readingTiSt;
-						newReadingsSLTQE->nameString = stateNameString;
-						newReadingsSLTQE->valueString = stateValueString;
+						newReadingsSLTQE->reading.time = readingTiSt;
+						newReadingsSLTQE->reading.name = stateNameString;
+						newReadingsSLTQE->reading.value = stateValueString;
 
 						// debug output
 						#if Setstate_Command_DBG >= 7
 						// prepare TiSt for LogFn
-						strText_t strText =
-  							SCDEFn->FmtDateTimeFn(readingTiSt);
+						string_t strText =
+  							SCDEFn->get_formated_date_time_fn(readingTiSt);
 
 						SCDEFn->Log3Fn(Setstate_ProvidedByCommand.commandNameText
 		  					,Setstate_ProvidedByCommand.commandNameTextLen
 							,7
 							,"Created Reading '%.*s' with Value '%.*s',"
 							 " Mime '%.*s', TimeStamp '%.*s'."
-							,newReadingsSLTQE->nameString.len
-							,newReadingsSLTQE->nameString.p_char
-							,newReadingsSLTQE->valueString.len
-							,newReadingsSLTQE->valueString.p_char
+							,newReadingsSLTQE->reading.name.len
+							,newReadingsSLTQE->reading.name.p_char
+							,newReadingsSLTQE->reading.value.len
+							,newReadingsSLTQE->reading.value.p_char
 							,stateMimeString.len
 							,stateMimeString.p_char
 							//,newReadingsSLTQE->mimeString.length
 							//,newReadingsSLTQE->mimeString.characters
-							,strText.strTextLen
-							,strText.strText);
+							,strText.len
+							,strText.p_char);
 
 						// free TiSt from LogFn
-						free(strText.strText);
+						free(strText.p_char);
 						#endif
 
 
@@ -752,7 +752,7 @@ exe    		 my $ret = CallFn($sdev, "StateFn", $d, $tim, $sname, $sval);
 							free(stateMimeString.p_char);
 
 						// add new Reading at tail
-						STAILQ_INSERT_TAIL(&Common_Definition->headReadings
+						STAILQ_INSERT_TAIL(&Common_Definition->head_readings
 							,newReadingsSLTQE, entries);
 
 						// added new Reading, break
@@ -760,27 +760,27 @@ exe    		 my $ret = CallFn($sdev, "StateFn", $d, $tim, $sname, $sval);
 					}
 
 					// looped - check if this existing Reading matches. Overwrite the old value.
-					if ( (oldReadingsSLTQE->nameString.len == stateNameString.len)
-						&& (!strncmp((const char*) oldReadingsSLTQE->nameString.p_char,
+					if ( (oldReadingsSLTQE->reading.name.len == stateNameString.len)
+						&& (!strncmp((const char*) oldReadingsSLTQE->reading.name.p_char,
 						(const char*) stateNameString.p_char,
 						stateNameString.len)) ) {
 
 						// replace / free old name & value for this reading
-						if (oldReadingsSLTQE->nameString.p_char) 
-							free(oldReadingsSLTQE->nameString.p_char);
+						if (oldReadingsSLTQE->reading.name.p_char) 
+							free(oldReadingsSLTQE->reading.name.p_char);
 
-						if (oldReadingsSLTQE->valueString.p_char) 
-							free(oldReadingsSLTQE->valueString.p_char);
+						if (oldReadingsSLTQE->reading.value.p_char) 
+							free(oldReadingsSLTQE->reading.value.p_char);
 
 						// fill Reading
-						oldReadingsSLTQE->readingTist = readingTiSt;
-						oldReadingsSLTQE->nameString = stateNameString;
-						oldReadingsSLTQE->valueString = stateValueString;
+						oldReadingsSLTQE->reading.time = readingTiSt;
+						oldReadingsSLTQE->reading.name = stateNameString;
+						oldReadingsSLTQE->reading.value = stateValueString;
 
 						#if Setstate_Command_DBG >= 7
 						// prepare TiSt for LogFn
-						strText_t strText =
-  							SCDEFn->FmtDateTimeFn(readingTiSt);
+						string_t strText =
+  							SCDEFn->get_formated_date_time_fn(readingTiSt);
 
 						// debug output
 						SCDEFn->Log3Fn(Setstate_ProvidedByCommand.commandNameText
@@ -788,19 +788,19 @@ exe    		 my $ret = CallFn($sdev, "StateFn", $d, $tim, $sname, $sval);
 							,7
 							,"Created Reading '%.*s' with Value '%.*s',"
 							 " Mime '%.*s', TimeStamp '%.*s'."
-							,oldReadingsSLTQE->nameString.len
-							,oldReadingsSLTQE->nameString.p_char
-							,oldReadingsSLTQE->valueString.len
-							,oldReadingsSLTQE->valueString.p_char
+							,oldReadingsSLTQE->reading.name.len
+							,oldReadingsSLTQE->reading.name.p_char
+							,oldReadingsSLTQE->reading.value.len
+							,oldReadingsSLTQE->reading.value.p_char
 							,stateMimeString.len
 							,stateMimeString.p_char
 							//,newReadingsSLTQE->mimeString.length
 							//,newReadingsSLTQE->mimeString.characters
-							,strText.strTextLen
-							,strText.strText);
+							,strText.len
+							,strText.p_char);
 
 						// free TiSt from LogFn
-						free(strText.strText);
+						free(strText.p_char);
 						#endif
 
 if (stateMimeString.p_char) 
@@ -902,19 +902,19 @@ if (stateMimeString.p_char)
 
 				// do not overwrite some states like -"opened", -"initialized"
 				if ( ( SCDERoot->global_control_register_a | F_INIT_DONE ) || 
-				     ( ( Common_Definition->stateLen == 3 ) && 
-				       ( strncmp((char*)Common_Definition->state, "???", 3 ) ) ) ) {
+				     ( ( Common_Definition->state_reading_value.len == 3 ) && 
+				       ( strncmp((char*)Common_Definition->state_reading_value.p_char, "???", 3 ) ) ) ) {
 
 					// free old value, if any
-					if (Common_Definition->state)
-						free(Common_Definition->state);
+					if (Common_Definition->state_reading_value.p_char)
+						free(Common_Definition->state_reading_value.p_char);
 
 					// overwrite with new tiST
-					Common_Definition->stateTiSt = readingTiSt;
+					Common_Definition->state_reading_timestamp = readingTiSt;
 
 					// store new value
-					Common_Definition->stateLen = 
-						asprintf((char**) &Common_Definition->state
+					Common_Definition->state_reading_value.len = 
+						asprintf((char**) &Common_Definition->state_reading_value.p_char
 							,"%.*s"
 							,stateValueString.len
 							,stateValueString.p_char);
@@ -929,8 +929,8 @@ if (stateMimeString.p_char)
 
 				#if Setstate_Command_DBG >= 7
 				// prepare TiSt for LogFn
-				strText_t strText =
-  					SCDEFn->FmtDateTimeFn(readingTiSt);
+				string_t strText =
+  					SCDEFn->get_formated_date_time_fn(readingTiSt);
 
 				SCDEFn->Log3Fn(Setstate_ProvidedByCommand.commandNameText
 		  			,Setstate_ProvidedByCommand.commandNameTextLen
@@ -947,11 +947,11 @@ if (stateMimeString.p_char)
 					,stateValueString.p_char
 					,stateMimeString.len
 					,stateMimeString.p_char
-					,strText.strTextLen
-					,strText.strText);
+					,strText.len
+					,strText.p_char);
 
 				// free TiSt from LogFn
-				free(strText.strText);
+				free(strText.p_char);
 				#endif
 
 				// call Modules StateFn. Interpret retMsg_Entry_String != NULL as veto !

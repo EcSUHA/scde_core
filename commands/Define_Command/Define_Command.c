@@ -56,7 +56,7 @@ static SCDEFn_t* p_SCDEFn;
 
 
 /* -------------------------------------------------------------------------------------------------
- *  DName: Define_ProvidedByCommand
+ *  DName: ProvidedByCommand
  *  Desc: Data 'Provided By Command' for the Define Command (functions + infos this command provides
  *        to SCDE)
  *  Data: 
@@ -73,7 +73,7 @@ const uint8_t Define_helpDetailText[] =
 ProvidedByCommand_t Define_ProvidedByCommand = {
   "Define",					        // Command-Name of command -> libfilename.so !
   6,						        // length of cmd
-  Define_InitializeCommand_Fn,	    // Initialize Fn
+  Define_Initialize_Command_Fn,	    // Initialize Fn
   Define_Command_Fn,				// the Fn code
   { &Define_helpText, sizeof(Define_helpText) },
   { &Define_helpDetailText, sizeof(Define_helpDetailText) }
@@ -82,7 +82,7 @@ ProvidedByCommand_t Define_ProvidedByCommand = {
 
 
 /* -------------------------------------------------------------------------------------------------
- *  FName: Define_InitializeCommand_Fn
+ *  FName: Define_Initialize_Command_Fn
  *  Desc: Initializion of an (new loaded) SCDE-Command. Init p_SCDERoot and p_SCDE Function Callbacks.
  *  Info: Called only once befor use!
  *  Para: SCDERoot_t* p_SCDERoot_from_core -> ptr to SCDE Data Root from SCDE-Core
@@ -90,7 +90,7 @@ ProvidedByCommand_t Define_ProvidedByCommand = {
  *--------------------------------------------------------------------------------------------------
  */
 int
-Define_InitializeCommand_Fn(SCDERoot_t* p_SCDERoot_from_core)
+Define_Initialize_Command_Fn(SCDERoot_t* p_SCDERoot_from_core)
 {
   // make data root locally available
   p_SCDERoot = p_SCDERoot_from_core;
@@ -115,7 +115,7 @@ Define_InitializeCommand_Fn(SCDERoot_t* p_SCDERoot_from_core)
 
 
 /* -------------------------------------------------------------------------------------------------
- *  FName: Define_Command_Fn
+ *  FName: Command_Fn
  *  Desc: Creates a new Definiton of Module "Type-Name" with custom Name "Name", prevills some common
  *        values and calls Modules DefineFn, to continue further module-specific initialization.
  *  Info: 'Definition-Name' is custom Definition name. Allowed: [azAZ09._], uint8_t[32]
@@ -168,22 +168,22 @@ Define_Command_Fn(const String_t args)
   // expected argument #2
   String_t module_name;
 
-  // take * to start searching 'module_name' text (seek-start-pos)
+  // take *, it is at 'definition_name' text start (seek-start-pos)
   module_name.p_char = definition_name.p_char;
 
-  // seek * to end of previous args text (to next '\32' -> space)
+  // seek * to end of previous args text ('definition_name') (to next '\32' -> space)
   while( ( i < args.len ) && ( *module_name.p_char != ' ' ) ) { i++, j++ ; module_name.p_char++ ; }
 
-  // length of 'definition_name' text determined
+  // length of previous args text ('definition_name') determined
   definition_name.len = j;
 
-  // seek * to start of 'module_name' text (skip '\32' -> space)
+  // seek * to start of 'opt_args' text (skip '\32' -> space)
   while( ( i < args.len ) && ( *module_name.p_char == ' ' ) ) { i++ ; module_name.p_char++ ; }
 
   // expected argument #3
   String_t opt_args;
 
-  // take * to start searching 'opt_args' text (seek-start-pos)
+  // take *, it is at 'module_name' text start (seek-start-pos)
   opt_args.p_char = module_name.p_char;
 
   // clear element seek-counter
@@ -192,13 +192,13 @@ Define_Command_Fn(const String_t args)
   // seek * to end of previous args text (to next '\32' -> space)
   while( ( i < args.len ) && ( *opt_args.p_char != ' ' ) ) { i++ , j++ ; opt_args.p_char++ ; }
 
-  // length of 'module_name' text determined
+  // length of previous args text ('module_name') determined
   module_name.len = j;
 
   // seek * to start of 'opt_args' (skip '\32' -> space)
   while( ( i < args.len ) && ( *opt_args.p_char == ' ' ) ) { i++ ; opt_args.p_char++ ; }
   
-  // length of 'opt_args' text determined (its the rest)
+  // length of 'opt_args' text determined (IN THIS CASE IT IS THE REST)
   opt_args.len = args.len - i;
 
 // -------------------------------------------------------------------------------------------------
@@ -212,7 +212,7 @@ Define_Command_Fn(const String_t args)
 
 	  // response with error text
 	  p_entry_ret_msg->string.len = asprintf(&p_entry_ret_msg->string.p_char,
-		  "Error! Could not interpret '%.*s'! Usage: Define <definition-name> <type-name> [<type dependent arguments>]",
+		  "Error! Could not interpret '%.*s'! Usage: Define <def-name> <type-name> [<type dependent arguments>]",
 		  args.len,
 		  (char *)args.p_char);
 
@@ -302,7 +302,7 @@ Define_Command_Fn(const String_t args)
 // -------------------------------------------------------------------------------------------------
 
   // can we get ptr to an Definition with requested Name? -> same Name is not allowed, error!
-  if (p_SCDEFn->GetDefinitionPtrByNameFn(definition_name.len, definition_name.p_char)) {
+  if (p_SCDEFn->get_ptr_to_definition_by_name_fn(definition_name)) {
 
 	  // alloc mem for ret_msg entry
 	  Entry_String_t* p_entry_ret_msg =
@@ -350,20 +350,20 @@ Define_Command_Fn(const String_t args)
 
   // store 'definition' !!ITS ALLOWED TO HAVE NO DEFINITION!!
   if (opt_args.len) {
-	p_new_entry_common_definition->def.p_char = malloc(opt_args.len);
-	memcpy(p_new_entry_common_definition->def.p_char, opt_args.p_char, opt_args.len);
-	p_new_entry_common_definition->def.len = opt_args.len;
+	p_new_entry_common_definition->definition.p_char = malloc(opt_args.len);
+	memcpy(p_new_entry_common_definition->definition.p_char, opt_args.p_char, opt_args.len);
+	p_new_entry_common_definition->definition.len = opt_args.len;
   }
 
   // assign an Unique Number
   p_new_entry_common_definition->nr = p_SCDERoot->device_count++;
 
   // init readings (stailq), now empty
-  STAILQ_INIT(&p_new_entry_common_definition->headReadings);
+  STAILQ_INIT(&p_new_entry_common_definition->head_readings);
 
   // set initial state '???'
-  p_new_entry_common_definition->stateLen =
-	  asprintf((char**)&p_new_entry_common_definition->state, "???");
+  p_new_entry_common_definition->state_reading_value.len =
+	  asprintf((char**)&p_new_entry_common_definition->state_reading_value.p_char, "???");
 
 // -------------------------------------------------------------------------------------------------
 
@@ -405,11 +405,11 @@ Define_Command_Fn(const String_t args)
 		  p_new_entry_common_definition->module->provided->typeName,
 		  p_new_entry_common_definition->nameLen,
 		  p_new_entry_common_definition->name,
-		  p_new_entry_common_definition->definitionLen,
-      	  p_new_entry_common_definition->definition,
+		  p_new_entry_common_definition->definition.len,
+      	  p_new_entry_common_definition->definition.p_char,
     	  p_new_entry_common_definition->nr,
-		  p_new_entry_common_definition->stateLen,
-     	  p_new_entry_common_definition->state);
+		  p_new_entry_common_definition->state_reading_value.len,
+     	  p_new_entry_common_definition->state_reading_value.p_char);
 	  #endif
 
 	  // call Modules Define Fn, and get ret msg. Interpret NULL as veto !
@@ -452,7 +452,8 @@ veto:
 	  p_new_entry_common_definition, Entry_Common_Definition_s, entries);
 
   // free the initial state '???' - may be NULL now!
-  if (p_new_entry_common_definition->state) free(p_new_entry_common_definition->state);
+  if (p_new_entry_common_definition->state_reading_value.p_char) 
+      free(p_new_entry_common_definition->state_reading_value.p_char);
 
   // check for Readings here, and free if any
   // !!! to do
@@ -461,7 +462,8 @@ veto:
   // !!! to do
   
   // free the 'definition' string - may be NULL!
-  if (p_new_entry_common_definition->def.p_char) free(p_new_entry_common_definition->def.p_char);
+  if (p_new_entry_common_definition->definition.p_char)
+      free(p_new_entry_common_definition->definition.p_char);
 
   // free the custom 'name' - is NOT NULL!
   free(p_new_entry_common_definition->nname.p_char);

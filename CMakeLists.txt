@@ -33,6 +33,7 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/core/include)
   add_subdirectory(commands/Set_Command)
   add_subdirectory(commands/Setstate_Command)
   add_subdirectory(commands/Shutdown_Command)
+  add_subdirectory(commands/Trigger_Command)
 
   # the embedded Modules
   add_subdirectory(modules/Global_Module)    

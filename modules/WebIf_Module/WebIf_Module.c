@@ -9517,17 +9517,17 @@ WebIf_ProvidedByModule_t WebIf_ProvidedByModule = {   // A-Z order
   "WebIf",					// Type-Name of module -> on Linux libfilename.so !
   5,						// size of Type-Name
 
-  WebIf_Add,					// Add
+  WebIf_Add,				// Add
   NULL,						// Attribute
-  WebIf_Define,					// Define
+  WebIf_Define,				// Define
   NULL, 					// Delete
-  WebIf_Direct_Read,				// Direct_Read
-  WebIf_Direct_Write,				// Direct_Write
+  WebIf_Direct_Read,		// Direct_Read
+  WebIf_Direct_Write,		// Direct_Write
   NULL,						// Except
   NULL,						// Get
-  WebIf_IdleCb,					// IdleCb
-  WebIf_Initialize,				// Initialize
-  NULL,						// Notify
+  WebIf_IdleCb,				// IdleCb
+  WebIf_Initialize,			// Initialize
+  WebIf_Notify,				// Notify
   NULL,						// Parse
   NULL,						// Read
   NULL,						// Ready
@@ -9535,8 +9535,8 @@ WebIf_ProvidedByModule_t WebIf_ProvidedByModule = {   // A-Z order
   NULL,						// Set
   NULL,						// Shutdown
   NULL, 					// State
-  WebIf_Sub, 					// Sub
-  WebIf_Undefine,				// Undefine
+  WebIf_Sub, 				// Sub
+  WebIf_Undefine,			// Undefine
   NULL,						// Write
   NULL,						// FnProvided
   sizeof(Entry_WebIf_Definition_t)			// Modul specific Size (Common_Definition_t + X)
@@ -10355,6 +10355,143 @@ WebIf_Initialize(SCDERoot_t* SCDERootptr)
 
 
 
+/* -------------------------------------------------------------------------------------------------
+ *  FName: Notify Fn
+ *  Desc: Informs an 'definition' of this 'module' for 'reading' and 'state' changes
+ *  Info: 
+ *  Para: Entry_Common_Definition_t *p_notifying_entry_common_definition -> the 'definition' identified for the activities
+ *	      Entry_Common_Definition_t *p_own_entry_common_definition -> the 'definition' identified for the activities
+ *  Rets: Entry_String_t* -> = SCDE_OK (no ret msg) or SLTQ Entry_String_t* with ret msg
+ * -------------------------------------------------------------------------------------------------
+ */
+Entry_String_t *
+WebIf_Notify(Entry_Common_Definition_t *p_notifying_entry_common_definition,
+    Entry_Common_Definition_t *p_own_entry_common_definition)
+{
+  // make common ptr to modul specific ptr
+  Entry_WebIf_Definition_t* p_entry_webIf_definition =
+		  (Entry_WebIf_Definition_t*) p_own_entry_common_definition;
+
+  // to store the ret_msg. SCDE_OK = no msg 
+  Entry_String_t *p_entry_ret_msg = SCDE_OK;
+
+// -------------------------------------------------------------------------------------------------
+
+  #if Telnet_Module_DBG >= 5
+  SCDEFn_at_WebIf_M->Log3Fn(p_entry_webIf_definition->common.name,
+	p_entry_webIf_definition->common.nameLen,
+	5,
+	"Notify Fn (Module '%.*s') is called. Definition '%.*s' (Module '%.*s') informs about pending notifies.",
+	p_entry_webIf_definition->common.module->provided->typeNameLen,
+	p_entry_webIf_definition->common.module->provided->typeName,
+	p_notifying_entry_common_definition->nname.len,
+	p_notifying_entry_common_definition->nname.p_char,
+	p_notifying_entry_common_definition->module->provided->typeNameLen,
+	p_notifying_entry_common_definition->module->provided->typeName);
+  #endif
+
+// ------------------------------------------------------------------------------------------------
+/*
+  string_t td_string = 
+      SCDEFn_at_WebIf_M->get_formated_date_time_fn(p_notifying_entry_common_definition->p_changed->update_timestamp); 
+  printf("List of notifys (common timestamp '%.*s') from definition '%.*s':\n",
+      td_string.len,
+      td_string.p_char,
+      p_notifying_entry_common_definition->nname.len,
+	  p_notifying_entry_common_definition->nname.p_char);
+  free(td_string.p_char);
+   
+  // list currently added readings stored for processing
+  entry_notify_t *p_current_entry_notify;
+  STAILQ_FOREACH(p_current_entry_notify, &p_notifying_entry_common_definition->p_changed->head_notifies, entries) {
+  	
+      string_t td_string = SCDEFn_at_WebIf_M->get_formated_date_time_fn(p_current_entry_notify->notify.timestamp);
+	  printf("L  %.*s | %.*s = %.*s\n"
+	      ,td_string.len
+		  ,td_string.p_char
+		  ,p_current_entry_notify->notify.name.len
+		  ,p_current_entry_notify->notify.name.p_char
+		  ,p_current_entry_notify->notify.value.len
+		  ,p_current_entry_notify->notify.value.p_char);	
+	  free(td_string.p_char);
+  }
+*/
+// -------------------------------------------------------------------------------------------------
+
+
+
+  // build the default return message
+  size_t strBufferLen = 0;
+  size_t strBufferOffset; //
+  string_t *retMsg = NULL;
+  entry_notify_t *p_current_entry_notify;
+ 
+  // set write buffer start
+  char *wBufStart = NULL;
+
+  do {
+  
+      // do already have the buffer-length, then alloc
+	  if (strBufferLen) {
+
+          // alloc mem for retMsg
+		  retMsg = malloc(sizeof(sting_t));
+
+		  // the buffer for the answer
+		  retMsg->p_char = malloc(strBufferLen);
+		  wBufStart = (char *) retMsg->p_char;
+		  retMsg->len = strBufferLen;
+      }
+
+      // reset write buffer offset counter, 1st and final cycle
+      strBufferOffset = 0;
+
+      // loop definitions notifies stored for processing
+      STAILQ_FOREACH(p_current_entry_notify, &p_notifying_entry_common_definition->p_changed->head_notifies, entries) {
+  	
+          // notifiy is reading update with value ?
+          if ( (p_current_entry_notify->notify.value.p_char) && (p_current_entry_notify->notify.value.len) ) {
+      
+              strBufferOffset += snprintf(wBufStart + strBufferOffset
+		          ,strBufferLen
+			      ,"&%.*s=%.*s"
+			      ,p_current_entry_notify->notify.name.len
+		          ,p_current_entry_notify->notify.name.p_char
+		          ,p_current_entry_notify->notify.value.len
+		          ,p_current_entry_notify->notify.value.p_char);
+          } 
+      
+          // notifiy is reading without value !   
+          else {
+              strBufferOffset += snprintf(wBufStart + strBufferOffset
+		          ,strBufferLen
+			      ,"&%.*s"
+			      ,p_current_entry_notify->notify.name.len
+		          ,p_current_entry_notify->notify.name.p_char);
+          }
+          
+          // store reqired len
+		  strBufferLen = strBufferOffset;
+      }
+      
+  } while (!retMsg);
+
+  retMsg->len = strBufferLen;
+  
+      
+   x
+ printf("BUILT: '%.*s':\n",
+      retMsg.len,
+      retMsg.p_char);
+  free(retMsg.p_char);
+
+
+
+  return p_entry_ret_msg;
+}
+
+
+
 /**
  * --------------------------------------------------------------------------------------------------
  *  FName: WebIf_Set
@@ -10400,6 +10537,9 @@ WebIf_Set(Common_Definition_t* Common_Definition
 
   return retMsg;
 }
+
+
+
 
 
 
