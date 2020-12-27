@@ -51,7 +51,7 @@ Get_Def_And_Attr(Entry_Definition_t* p_entry_definition)
 		malloc (sizeof (Entry_String_t));
 		
 	// check: are definition args stored?
-	if(p_entry_definition->definition) {
+	if (p_entry_definition->definition.p_char) {
 		
 		// write define line with definition args and store it into entry
 		p_entry_string->string.len = asprintf(&p_entry_string->string.p_char,
@@ -60,8 +60,8 @@ Get_Def_And_Attr(Entry_Definition_t* p_entry_definition)
 			p_entry_definition->name,
 			p_entry_definition->module->provided->typeNameLen,
 			p_entry_definition->module->provided->typeName,
-			p_entry_definition->definitionLen,
-			p_entry_definition->definition);
+			p_entry_definition->definition.len,
+			p_entry_definition->definition.p_char);
 	}
 		
 	// no definition args stored ...

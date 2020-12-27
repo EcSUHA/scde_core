@@ -18,7 +18,7 @@
 
 /* helper
  * --------------------------------------------------------------------------------------------------
- *  FName: Format Date Time 
+ *  FName: Get_Formated_Date_Time
  *  Desc: Creates formated date-time-text (uint8_t style - in this case zero terminated) from given
  *        time-stamp. Returned in msgText_t (text in allocated memory + length information)
  *  Note: DO NOT FORGET TO FREE MEMORY !! 
@@ -26,18 +26,18 @@
  *  Rets: strText_t -> formated date-time-text data
  * --------------------------------------------------------------------------------------------------
  */
-strText_t
-FmtDateTime(time_t tiSt)
+string_t
+Get_Formated_Date_Time_Fn(time_t timestamp)
 {
-  // our msg-text data packet
-  strText_t strText;
+  // our text as result - don't forget to free!
+  string_t text;
 
-  // get timeinfo for time-stamp
+  // get timeinfo for timestamp
   struct tm timeinfo;
-  localtime_r(&tiSt, &timeinfo);
+  localtime_r(&timestamp, &timeinfo);
 
   // prepare formated-time-string in allocated memory
-  strText.strTextLen = asprintf((char**) &strText.strText
+  text.len = asprintf((char**) &text.p_char
 	,"%04d-%02d-%02d %02d:%02d:%02d"
 	,timeinfo.tm_year+1900
 	,timeinfo.tm_mon+1
@@ -46,6 +46,8 @@ FmtDateTime(time_t tiSt)
 	,timeinfo.tm_min
 	,timeinfo.tm_sec);
 
-  return strText;
+  return text;
 }
+
+
 

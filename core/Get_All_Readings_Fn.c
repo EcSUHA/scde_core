@@ -46,7 +46,8 @@ GetAllReadings(Common_Definition_t *Common_Definition)
 
   // first the STATE reading
  
-	if (Common_Definition->state) {
+	if ( (Common_Definition->state_reading_value.p_char) && 
+	    (Common_Definition->state_reading_value.len) ){
 //	if(defined($val) &&
 //     $val ne "unknown" &&
 //     $val ne "Initialized" &&
@@ -62,8 +63,8 @@ GetAllReadings(Common_Definition_t *Common_Definition)
 			,"setstate %.*s %.*s\r\n"
 			,Common_Definition->nameLen
 			,Common_Definition->name
-			,Common_Definition->stateLen
-			,Common_Definition->state);
+			,Common_Definition->state_reading_value.len
+			,Common_Definition->state_reading_value.p_char);
 
 		// insert retMsg in stail-queue
 		STAILQ_INSERT_TAIL(&headRetMsgMultiple, retMsgMultiple, entries);
@@ -75,15 +76,15 @@ GetAllReadings(Common_Definition_t *Common_Definition)
 	// second the detailed list of readings
 
   // loop the readings stored for this definition for processing
-	xReadingSLTQE_t *currentReadingSLTQE;
-	STAILQ_FOREACH(currentReadingSLTQE, &Common_Definition->headReadings, entries) {
+	entry_reading_t *currentReadingSLTQE;
+	STAILQ_FOREACH(currentReadingSLTQE, &Common_Definition->head_readings, entries) {
 
 		// set current tist, if missing
-		if (!currentReadingSLTQE->readingTist) {
+		if (!currentReadingSLTQE->reading.time) {
 
 			//Log 4, "WriteStatefile $d $c: Missing TIME, using current time";
 
-			time(&currentReadingSLTQE->readingTist);
+			time(&currentReadingSLTQE->reading.time);
 
 		}
 
@@ -98,7 +99,7 @@ GetAllReadings(Common_Definition_t *Common_Definition)
 
 		// get reading tist
 		struct tm timeinfo;
-		localtime_r(&currentReadingSLTQE->readingTist, &timeinfo);
+		localtime_r(&currentReadingSLTQE->reading.time, &timeinfo);
 
 		// alloc new retMsgMultiple queue element
 		strTextMultiple_t *retMsgMultiple =
@@ -115,10 +116,10 @@ GetAllReadings(Common_Definition_t *Common_Definition)
 			,timeinfo.tm_hour
 			,timeinfo.tm_min
 			,timeinfo.tm_sec
-			,currentReadingSLTQE->nameString.len
-			,currentReadingSLTQE->nameString.p_char
-			,currentReadingSLTQE->valueString.len
-			,currentReadingSLTQE->valueString.p_char);
+			,currentReadingSLTQE->reading.name.len
+			,currentReadingSLTQE->reading.name.p_char
+			,currentReadingSLTQE->reading.value.len
+			,currentReadingSLTQE->reading.value.p_char);
 
 /*
 		// display for debug
