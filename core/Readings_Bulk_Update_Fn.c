@@ -28,18 +28,16 @@
  *  FName: Readings_Bulk_Update_Fn
  *  Desc: Call readingsBulkUpdate to update the reading.
  *        Example: readingsUpdate($hash,"temperature",$value);
- *  Para: const uint8_t *commandTxt ->  ptr to the Command-Text
- *       const size_t commandTxtLen -> Command-Text length
- *       commandFn_t commandFn -> the command Fn
- *       const uint8_t *commandHelp -> ptr the Command-Help text
- *       const size_t commandHelpLen -> Command-Help text length
+ *  Para: entry_common_definition_t * ->  ptr to the common definition of the reading
+ *       reading_t * -> ptr to the reading that was updated
+ *       const bool ->  
+ *       time_t -> optional, timestamp overrides
  *  Rets: -/-
  * --------------------------------------------------------------------------------------------------
  */
 int
-Readings_Bulk_Update_Fn(Entry_Common_Definition_t *p_entry_common_definition,
-    const String_t reading_name,
-    const String_t reading_value,
+Readings_Bulk_Update_Fn(entry_common_definition_t *p_entry_common_definition,
+    reading2_t *p_reading,
     const bool changed,
     time_t timestamp)
 {
@@ -59,14 +57,17 @@ Readings_Bulk_Update_Fn(Entry_Common_Definition_t *p_entry_common_definition,
 
 // -------------------------------------------------------------------------------------------------
 //debug info...
+  string_t value_as_text = 
+      p_reading->p_reading_type->p_get_raw_reading_as_text_fn(p_reading);				
+
   printf("readingsBulkUpdate called for reading:'%.*s' value:'%.*s'\n"
-  	,reading_name.len
-  	,reading_name.p_char
-  	,reading_value.len
-  	,reading_value.p_char);
+  	,p_reading->name.len
+  	,p_reading->name.p_char
+  	,value_as_text.len
+    ,value_as_text.p_char);
+  	
+  free(value_as_text.p_char);
  // -------------------------------------------------------------------------------------------------
- 	
- 
 
 
   // default is use bulk update timestamp
@@ -76,12 +77,15 @@ Readings_Bulk_Update_Fn(Entry_Common_Definition_t *p_entry_common_definition,
   if (timestamp) readings_update_timestamp = timestamp;
   
   // set the readings
-  Set_Readings_Value_Fn(p_entry_common_definition, reading_name, reading_value, readings_update_timestamp);
+//  Set_Readings_Value_Fn(p_entry_common_definition, reading_name, reading_value, readings_update_timestamp);
+  p_reading->timestamp = readings_update_timestamp;
+
+// ????
 
   // create notify for changes?
   if (changed) {
   
-      Add_Event_Fn(p_entry_common_definition, reading_name, reading_value, timestamp);
+      Add_Event_Fn(p_entry_common_definition, p_reading);//, timestamp);
   }
 
 

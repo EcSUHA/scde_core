@@ -1,4 +1,4 @@
-﻿// Command Help for SCDE
+﻿// SCDE-Command Set
 
 #ifndef SET_COMMAND_H
 #define SET_COMMAND_H
@@ -12,10 +12,10 @@
 
 
 // the initialize Fn
-int Set_InitializeCommandFn(SCDERoot_t* SCDERootptr);
+int Set_Initialize_Command(SCDERoot_t * SCDERootptr);
 
 // the main command Fn
-struct headRetMsgMultiple_s Set_CommandFn (const uint8_t *args, const size_t argsLen);
+struct head_string_s Set_Command(const uint8_t *args, const size_t argsLen);
 
 
 

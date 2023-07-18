@@ -402,18 +402,18 @@ Attr_Command_Fn(const String_t args)
 // -------------------------------------------------------------------------------------------------
 
 	// start with 'no entry' for 'attr_value' -> may reach search loop - with matching entry
-	Entry_Attr_Value_t* p_entry_attr_value = NULL;
+	entry_attr_value_t *p_entry_attr_value = NULL;
 
 	// get first entry from our 'attr_name' list
-  	Entry_Attr_Name_t* p_entry_attr_name = 
-		LIST_FIRST(&p_SCDERoot->head_attr_name);
+  	entry_attr_name_t *p_entry_attr_name = 
+		LIST_FIRST(&p_SCDERoot->head_attr_names);
 
   	// search the lists 'attr_name' entries for the requested 'attr_name'
  	while ( p_entry_attr_name != NULL ) {
 
 		// compare no + length of characters. Matching list entry with requested 'attr_name' ?
-		if ( ( p_entry_attr_name->attr_name.len == attr_name.len )
-			&& ( !strncasecmp((const char*) p_entry_attr_name->attr_name.p_char,
+		if ( ( strlen(p_entry_attr_name->p_attr_name) == attr_name.len )
+			&& ( !strncasecmp((const char*) p_entry_attr_name->p_attr_name,
 				(const char*) attr_name.p_char,
 				attr_name.len) ) ) {
 
@@ -430,27 +430,25 @@ Attr_Command_Fn(const String_t args)
 	// no entry for requested 'attr_name' found ?
   	if ( p_entry_attr_name == NULL ) {
 
-		// alloc mem for new 'attr_name' entry (Entry_Attr_Name_s)
+		// alloc mem for new 'attr_name' entry (entry_attr_name_s)
 		p_entry_attr_name
-			= malloc(sizeof(Entry_Attr_Name_t));
-
-		// store 'attr_name'.len to entry
-		p_entry_attr_name->attr_name.len = attr_name.len;
+			= malloc(sizeof(entry_attr_name_t));
 
 		// store 'attr_name' to entry
-		p_entry_attr_name->attr_name.p_char = malloc(attr_name.len);
-		memcpy(p_entry_attr_name->attr_name.p_char, attr_name.p_char, attr_name.len);
-	
-		// insert new 'attr_name' entry to the attr_name list
-		LIST_INSERT_HEAD(&p_SCDERoot->head_attr_name, p_entry_attr_name, entries);
+		asprintf(&p_entry_attr_name->p_attr_name,
+			"%.*s",
+			attr_name.len,
+			attr_name.p_char);
 
+		// insert new 'attr_name' entry to the attr_name list
+		LIST_INSERT_HEAD(&p_SCDERoot->head_attr_names, p_entry_attr_name, entries);
 	}
 
 // -------------------------------------------------------------------------------------------------
 
 	else {
 		// get first entry from our 'attr_value' list
-  		p_entry_attr_value = LIST_FIRST(&p_entry_common_definition->head_attr_value);
+  		p_entry_attr_value = LIST_FIRST(&p_entry_common_definition->head_attr_values);
 
   		// search this 'definition' list of assigned 'attr_value' entries
  		while ( p_entry_attr_value != NULL ) {
@@ -461,10 +459,10 @@ Attr_Command_Fn(const String_t args)
 				// found assigned 'attr_value', keep, break loop!
 				break;
 			}
+			
+		    // load next 'attr_value' entry to process it
+		    p_entry_attr_value = LIST_NEXT(p_entry_attr_value, entries);
 		}
-
-		// load next 'attr_value' entry to process it
-		p_entry_attr_value = LIST_NEXT(p_entry_attr_value, entries);
  	 }
 
 // -------------------------------------------------------------------------------------------------
@@ -472,10 +470,9 @@ Attr_Command_Fn(const String_t args)
 	// no entry for requested 'attr_value' ?
   	if ( p_entry_attr_value == NULL ) {
 
-		// alloc mem for new 'attr_value' entry (Entry_Attr_Value_s)
+		// alloc mem for new 'attr_value' entry (entry_attr_value_s)
 		p_entry_attr_value
-			= malloc(sizeof(Entry_Attr_Value_t));
-
+			= malloc(sizeof(entry_attr_value_t));
 	}
 
 // -------------------------------------------------------------------------------------------------
@@ -485,8 +482,8 @@ Attr_Command_Fn(const String_t args)
 		LIST_REMOVE(p_entry_attr_value, entries);
 
 		// free old value from entry
-		if (p_entry_attr_value->attr_value.p_char) 
-			free(p_entry_attr_value->attr_value.p_char);
+		if (p_entry_attr_value->p_attr_value) 
+			free(p_entry_attr_value->p_attr_value);
 	}
 
 // -------------------------------------------------------------------------------------------------
@@ -496,31 +493,25 @@ Attr_Command_Fn(const String_t args)
 	// store the assignment of the 'attr_name' to this  entry 'attr_value'
 	p_entry_attr_value->p_entry_attr_name = p_entry_attr_name;
 
-	// store the 'attr_value'.len
-	p_entry_attr_value->attr_value.len = attr_value.len;
-
-	// may be without value ! Length 0!
-	if (attr_value.len) {
-
-		p_entry_attr_value->attr_value.p_char = malloc(attr_value.len);
-		memcpy(p_entry_attr_value->attr_value.p_char, attr_value.p_char, attr_value.len);
-	}
+    // store 'attr_value' to entry
+	asprintf(&p_entry_attr_value->p_attr_value,
+	    "%.*s",
+		attr_value.len,
+		attr_value.p_char);
 
 	// add the 'attr_value' entry to the attr_value list
-	LIST_INSERT_HEAD(&p_entry_common_definition->head_attr_value, p_entry_attr_value, entries);
+	LIST_INSERT_HEAD(&p_entry_common_definition->head_attr_values, p_entry_attr_value, entries);
 
 	#if Attr_Command_DBG >= 7
 	p_SCDEFn->Log3Fn(Attr_ProvidedByCommand.commandNameText,
 		Attr_ProvidedByCommand.commandNameTextLen,
 		7,
-		"attr_name '%.*s' with attr_value '%.*s' assigned to definition '%.*s' "
+		"attr_name '%s' with attr_value '%s' assigned to definition '%.*s' "
 		"(modul '%.*s').",
-		p_entry_attr_name->attr_name.len,
-		p_entry_attr_name->attr_name.p_char,
-		p_entry_attr_value->attr_value.len,
-		p_entry_attr_value->attr_value.p_char,
-		p_entry_common_definition->nameLen,
-		p_entry_common_definition->name,
+		p_entry_attr_name->p_attr_name,
+		p_entry_attr_value->p_attr_value,
+		p_entry_common_definition->nname.len,
+		p_entry_common_definition->nname.p_char,
 		p_entry_common_definition->module->provided->typeNameLen,
 		p_entry_common_definition->module->provided->typeName);
 	#endif

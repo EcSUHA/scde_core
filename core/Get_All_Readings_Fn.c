@@ -18,134 +18,163 @@
 
 
 
-
-
-
 /* --------------------------------------------------------------------------------------------------
- *  FName: GetAllReadings
- *  Desc: Creates a new Define with name "Name", and Module "TypeName" and calls Modules DefFn with
- *        args "Args"
- *  Info: 'Name' is custom definition name [azAZ09._] char[31]
- *        'TypeName' is module name
- *        'Definition+X' is passed to modules DefineFn, and stored in Definition->Definition
- *  Para: Common_Definition_t *Common_Definition -> ptr to definition which readings are requested
- *  Rets: struct headRetMsgMultiple_s -> head from STAILQ, stores multiple (all) readings
- *        from requested Definition, NULL=NONE
+ *  FName: Get_All_Readings_Fn
+ *  Desc: Loop all readings stored in this definition and converts them to Setreading args-text,
+ *       for recreation. The text is stored in a STAILQ. The Head is returned, else NULL.
+ *       Includes STATE reading.
+ *  Info: Fixed format:
+ *        setstate myBH1750 BH1750:STATE 2021-1-6 15:17:3 state luminosity: 36.7 lx
+ *        recreation-cmd Def-Name Type:Readingtype Date Clock ? readingname: 'rest is readingvalue'
+ *  Para: Entry_Common_Definition_t *p_entry_common_definition -> ptr to definition which readings
+ *                                   are requested as text
+ *  Rets: struct head_string_s head_readings_as_text -> head from STAILQ, the prepared readings as
+ *                                                      text, NULL=NONE
  * --------------------------------------------------------------------------------------------------
  */
-struct headRetMsgMultiple_s
-GetAllReadings(Common_Definition_t *Common_Definition)
+struct head_string_s
+Get_All_Readings_Fn(Entry_Common_Definition_t *p_entry_common_definition)
 {
-  // prepare STAILQ head for multiple RetMsg storage
-  struct headRetMsgMultiple_s headRetMsgMultiple;
+  // prepare STAILQ head for multiple readings_as_text storage
+  struct head_string_s head_readings_as_text;
 
-  // Initialize the queue head
-  STAILQ_INIT(&headRetMsgMultiple);
+  // initialize the queue head
+  STAILQ_INIT(&head_readings_as_text);
 
 //---------------------------------------------------------------------------------------------------
 
   // first the STATE reading
  
-	if ( (Common_Definition->state_reading_value.p_char) && 
-	    (Common_Definition->state_reading_value.len) ){
+  if ( (p_entry_common_definition->state_reading_value.p_char) && 
+	   (p_entry_common_definition->state_reading_value.len) ) {
 //	if(defined($val) &&
 //     $val ne "unknown" &&
 //     $val ne "Initialized" &&
 //     $val ne "" &&
 //     $val ne "???") {
 
-		// alloc new retMsgMultiple queue element
-		strTextMultiple_t *retMsgMultiple =
-			malloc(sizeof(strTextMultiple_t));
+		// alloc new p_entry_reading_as_text queue element
+		entry_string_t *p_entry_reading_as_text =
+			malloc(sizeof(entry_string_t));
 
 		// write line to allocated memory and store to queue
-		retMsgMultiple->strTextLen = asprintf(&retMsgMultiple->strText
+		p_entry_reading_as_text->string.len = asprintf(&p_entry_reading_as_text->string.p_char
 			,"setstate %.*s %.*s\r\n"
-			,Common_Definition->nameLen
-			,Common_Definition->name
-			,Common_Definition->state_reading_value.len
-			,Common_Definition->state_reading_value.p_char);
+			,p_entry_common_definition->nname.len
+			,p_entry_common_definition->nname.p_char
+			,p_entry_common_definition->state_reading_value.len
+			,p_entry_common_definition->state_reading_value.p_char);
 
-		// insert retMsg in stail-queue
-		STAILQ_INSERT_TAIL(&headRetMsgMultiple, retMsgMultiple, entries);
 
-	}
+        // display for debug
+		printf(&p_entry_reading_as_text->string.p_char
+			,"dbg 1.st row: setstate %.*s %.*s\r\n"
+			,p_entry_common_definition->nname.len
+			,p_entry_common_definition->nname.p_char
+			,p_entry_common_definition->state_reading_value.len
+			,p_entry_common_definition->state_reading_value.p_char);
+        // dbg end
+        
+
+		// insert STATE reading as text in stail-queue
+		STAILQ_INSERT_TAIL(&head_readings_as_text, p_entry_reading_as_text, entries);
+
+  }
 
 //---------------------------------------------------------------------------------------------------
 
-	// second the detailed list of readings
+  // now all other readings
 
-  // loop the readings stored for this definition for processing
-	entry_reading_t *currentReadingSLTQE;
-	STAILQ_FOREACH(currentReadingSLTQE, &Common_Definition->head_readings, entries) {
+  // loop the readings stored in this definition, for converting to text
+  entry_reading2_t *p_current_entry_reading;
+  STAILQ_FOREACH(p_current_entry_reading, &p_entry_common_definition->head_readings2, entries) {
 
-		// set current tist, if missing
-		if (!currentReadingSLTQE->reading.time) {
+      // set to current timestamp, if missing
+      if (!p_current_entry_reading->reading.timestamp) {
 
-			//Log 4, "WriteStatefile $d $c: Missing TIME, using current time";
+	      //Log 4, "WriteStatefile $d $c: Missing TIME, using current time";
 
-			time(&currentReadingSLTQE->reading.time);
-
-		}
+		  time(&p_current_entry_reading->reading.timestamp);
+      }
 
 /*		// set current value, if missing
-		if (!currentReadingSLTQE->readingTist) {
+		if (!p_current_entry_reading->readingTist) {
 
 			//Log 4, "WriteStatefile $d $c: Missing VAL, setting it to 0";
 
-			currentReadingSLTQE->readingTist = ;
+			p_current_entry_reading->readingTist = ;
 
 		}*/
 
-		// get reading tist
-		struct tm timeinfo;
-		localtime_r(&currentReadingSLTQE->reading.time, &timeinfo);
+      // get reading timestamp
+	  struct tm timeinfo;
+	  localtime_r(&p_current_entry_reading->reading.timestamp, &timeinfo);
 
-		// alloc new retMsgMultiple queue element
-		strTextMultiple_t *retMsgMultiple =
-			malloc(sizeof(strTextMultiple_t));
+      // get reading as text
+      string_t value_as_text = 
+          p_current_entry_reading->reading.p_reading_type->p_get_raw_reading_as_text_fn(&p_current_entry_reading->reading);				
 
-		// write line to allocated memory and store to queue
-		retMsgMultiple->strTextLen = asprintf(&retMsgMultiple->strText
-			,"setstate %.*s %d-%d-%d %d:%d:%d %.*s %.*s TXT\r\n"
-			,Common_Definition->nameLen
-			,Common_Definition->name
-			,timeinfo.tm_year+1900
-			,timeinfo.tm_mon+1
-			,timeinfo.tm_mday
-			,timeinfo.tm_hour
-			,timeinfo.tm_min
-			,timeinfo.tm_sec
-			,currentReadingSLTQE->reading.name.len
-			,currentReadingSLTQE->reading.name.p_char
-			,currentReadingSLTQE->reading.value.len
-			,currentReadingSLTQE->reading.value.p_char);
+	  // alloc new entry to store reading_as_text as queue element
+	  entry_string_t *p_entry_reading_as_text =
+	      malloc(sizeof(entry_string_t));
+
+	  // write reading as text-line to allocated memory and store in queue
+	  p_entry_reading_as_text->string.len = asprintf(&p_entry_reading_as_text->string.p_char
+	      ,"setstate %.*s %.*s:%s %d-%d-%d %d:%d:%d %.*s %.*s\r\n"
+	      ,p_entry_common_definition->nname.len
+	      ,p_entry_common_definition->nname.p_char
+			
+		  ,p_current_entry_reading->reading.p_reading_type->p_provided_by_module->typeNameLen
+		  ,(char *)&p_current_entry_reading->reading.p_reading_type->p_provided_by_module->typeName
+		  ,p_current_entry_reading->reading.p_reading_type->template_name
+		
+		  ,timeinfo.tm_year+1900
+		  ,timeinfo.tm_mon+1
+		  ,timeinfo.tm_mday
+		  ,timeinfo.tm_hour
+		  ,timeinfo.tm_min
+		  ,timeinfo.tm_sec
+			
+		  ,p_current_entry_reading->reading.name.len
+		  ,p_current_entry_reading->reading.name.p_char
+			
+		   ,value_as_text.len
+           ,value_as_text.p_char);
 
 /*
-		// display for debug
-		LOGD("setstate %.*s %d.%d.%d %d:%d:%d %.*s %.*s TXT\r\n"
-			,Common_Definition->nameLen
-			,Common_Definition->name
-			,timeinfo.tm_year+1900
-			,timeinfo.tm_mon+1
-			,timeinfo.tm_mday
-			,timeinfo.tm_hour
+      // display for debug
+	  printf("dbg setstate %.*s %.*s:%s %d-%d-%d %d:%d:%d %.*s %.*s\r\n"
+	      ,p_entry_common_definition->nname.len
+		  ,p_entry_common_definition->nname.p_char
+			
+		  ,p_current_entry_reading->reading.p_entry_reading_type->p_provided_by_module->typeNameLen
+		  ,(char *)&p_current_entry_reading->reading.p_entry_reading_type->p_provided_by_module->typeName
+		  ,p_current_entry_reading->reading.p_entry_reading_type->template_name
 
-			,timeinfo.tm_min
-			,timeinfo.tm_sec
-			,currentReadingSLTQE->readingNameTextLen
-			,currentReadingSLTQE->readingNameText
-			,currentReadingSLTQE->readingValueTextLen
-			,currentReadingSLTQE->readingValueText);
+		  ,timeinfo.tm_year+1900
+		  ,timeinfo.tm_mon+1
+		  ,timeinfo.tm_mday
+		  ,timeinfo.tm_hour
+		  ,timeinfo.tm_min
+		  ,timeinfo.tm_sec
+			
+		  ,p_current_entry_reading->reading.name.len
+		  ,p_current_entry_reading->reading.name.p_char
+			
+		  ,value_as_text.len
+          ,(char *)value_as_text.p_char);
+      // end
 */
 
-		// insert retMsg in stail-queue
-		STAILQ_INSERT_TAIL(&headRetMsgMultiple, retMsgMultiple, entries);
+      // free our reading as text
+	  free(value_as_text.p_char);
 
+	  // insert reading_as_text in stail-queue
+	  STAILQ_INSERT_TAIL(&head_readings_as_text, p_entry_reading_as_text, entries);
 	}
 
-  // return STAILQ head, stores multiple generated lines of text, if STAILQ_EMPTY -> none
-  return headRetMsgMultiple;
+  // return STAILQ head, stores all readings of this definition as text. if STAILQ_EMPTY -> none
+  return head_readings_as_text;
 }
 
 

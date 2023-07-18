@@ -73,8 +73,8 @@ const uint8_t Set_helpDetailText[] =
 ProvidedByCommand_t Set_ProvidedByCommand = {
   "Set",					// Command-Name of command -> libfilename.so !
   3,						// length of cmd
-  Set_Initialize_Command,			// Initialize Fn
-  Set_Command,				// the Fn code
+  Set_InitializeCommandFn,			// Initialize Fn
+  Set_CommandFn,				// the Fn code
   { &Set_helpText, sizeof(Set_helpText) },
   { &Set_helpDetailText, sizeof(Set_helpDetailText) }
 };
@@ -90,7 +90,7 @@ ProvidedByCommand_t Set_ProvidedByCommand = {
  *--------------------------------------------------------------------------------------------------
  */
 int 
-Set_Initialize_Command(SCDERoot_t* SCDERootptr)
+Set_InitializeCommandFn(SCDERoot_t* SCDERootptr)
 {
   // make data root locally available
   SCDERoot = SCDERootptr;
@@ -139,11 +139,11 @@ Set_Initialize_Command(SCDERoot_t* SCDERootptr)
  *        'Definition ...' is custom and passed to modules DefineFn, stored in Definition->Definition
  *  Para: const uint8_t *args  -> prt to space seperated define text string "Name Type-Name Definition ..."
  *        const size_t argsLen -> length of args
- *  Rets: struct head_string_s -> STAILQ head of multiple retMsg, if NULL -> no retMsg-entry
+ *  Rets: struct headRetMsgMultiple_s -> STAILQ head of multiple retMsg, if NULL -> no retMsg-entry
  * -------------------------------------------------------------------------------------------------
  */
-struct head_string_s
-Set_Command (const uint8_t *args
+struct headRetMsgMultiple_s
+Set_CommandFn (const uint8_t *args
 		,const size_t argsLen)
 {
   #if Set_Command_DBG >= 7
@@ -158,10 +158,10 @@ Set_Command (const uint8_t *args
 // --------------------------------------------------------------------------------------------------
 
   // prepare STAILQ head for multiple RetMsg storage
-  struct head_string_s p_ret_msg_entry_sting;
+  struct headRetMsgMultiple_s headRetMsgMultiple;
 
   // Initialize the queue
-  STAILQ_INIT(&p_ret_msg_entry_sting);
+  STAILQ_INIT(&headRetMsgMultiple);
 
   // set start of possible Name
   const uint8_t *name = args;
@@ -198,40 +198,32 @@ Set_Command (const uint8_t *args
 		,args);
 
 	// insert retMsg in stail-queue
-	STAILQ_INSERT_TAIL(&p_ret_msg_entry_sting, retMsg, entries);
+	STAILQ_INSERT_TAIL(&headRetMsgMultiple, retMsg, entries);
 
 	// return STAILQ head, stores multiple retMsg, if NULL -> no retMsg-entries
-	return p_ret_msg_entry_sting;
+	return headRetMsgMultiple;
+
   }
 
-  // get the p_entry_common_definition by Name
-  entry_common_definition_t *p_entry_common_definition = NULL;
+  // get the Common_Definition by Name
+  Common_Definition_t *Common_Definition;
 
   strTextMultiple_t *retMsg = NULL;
 
-  STAILQ_FOREACH(p_entry_common_definition, &SCDERoot->HeadCommon_Definitions, entries) {
+  STAILQ_FOREACH(Common_Definition, &SCDERoot->HeadCommon_Definitions, entries) {
 
-	if ( (p_entry_common_definition->nameLen == nameLen)
-		&& (!strncasecmp((const char*) p_entry_common_definition->name, (const char*) name, nameLen)) ) {
+	if ( (Common_Definition->nameLen == nameLen)
+		&& (!strncasecmp((const char*) Common_Definition->name, (const char*) name, nameLen)) ) {
 
-        char **p_p_argv;
-        int argc;
+		if (Common_Definition->module->provided->set_fn) {
 
-        // split 'setArgs' the default way
-        p_p_argv = SCDEFn->ArgParse_SplitArgsToAllocatedMemFn(&argc,
-            setArgs, setArgsLen);
-                
-        // set fn installed + argc >= 1 ?
-		if ( (p_entry_common_definition->module->provided->Set) && ( argc >= 1 ) ) {
-
-            // call modules set fn
-			retMsg = p_entry_common_definition->module->provided->Set(p_entry_common_definition, p_p_argv, argc);
+			retMsg = Common_Definition->module->provided->set_fn(Common_Definition, setArgs, setArgsLen);
 
 			// got an error msg?
 			if (retMsg) {
 
 				// insert retMsg in stail-queue
-				STAILQ_INSERT_TAIL(&p_ret_msg_entry_sting, retMsg, entries);
+				STAILQ_INSERT_TAIL(&headRetMsgMultiple, retMsg, entries);
 
 			}
 
@@ -246,24 +238,24 @@ Set_Command (const uint8_t *args
 
 			// response with error text
 			retMsg->strTextLen = asprintf(&retMsg->strText
-				,"Error! Could not execute command SET at Define '%.*s' with arguments '%.*s'! No args, or Type '%.*s' does not support it!"
-				,p_entry_common_definition->nameLen
-				,p_entry_common_definition->name
+				,"Error! Could not execute command SET at Define '%.*s' with arguments '%.*s'! Type '%.*s' does not support it!"
+				,Common_Definition->nameLen
+				,Common_Definition->name
 				,setArgsLen
 				,setArgs
-			   	,p_entry_common_definition->module->provided->typeNameLen
-				,p_entry_common_definition->module->provided->typeName);
+			   	,Common_Definition->module->provided->typeNameLen
+				,Common_Definition->module->provided->typeName);
 
 			// insert retMsg in stail-queue
-		    STAILQ_INSERT_TAIL(&p_ret_msg_entry_sting, retMsg, entries);
+		STAILQ_INSERT_TAIL(&headRetMsgMultiple, retMsg, entries);
+
 		}
 
-        // ArgParseFn has allocated mem. Free it.
-        SCDEFn->ArgParse_FreeSplittedArgsInAllocatedMemFn(p_p_argv);
+	// return STAILQ head, stores multiple retMsg, if NULL -> no retMsg-entries
+	return headRetMsgMultiple;
 
-	    // return STAILQ head, stores multiple retMsg, if NULL -> no retMsg-entries
-	    return p_ret_msg_entry_sting;
 	}
+
   }
 
   // alloc mem for retMsg
@@ -278,10 +270,10 @@ Set_Command (const uint8_t *args
 	,name);
 	
   // insert retMsg in stail-queue
-  STAILQ_INSERT_TAIL(&p_ret_msg_entry_sting, retMsg, entries);
+  STAILQ_INSERT_TAIL(&headRetMsgMultiple, retMsg, entries);
 
   // return STAILQ head, stores multiple retMsg, if NULL -> no retMsg-entries
-  return p_ret_msg_entry_sting;
+  return headRetMsgMultiple;
 
   }
 

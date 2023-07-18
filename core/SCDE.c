@@ -64,15 +64,18 @@ SCDERoot_t SCDERoot;
  * Data: 
  */
 SCDEFn_t SCDEFn = {
-   AnalyzeCommand
+   Add_Query_Encoded
+  ,AnalyzeCommand
   ,AnalyzeCommandChain
   ,CallGetFnByDefName
   ,CommandReloadModule
+  ,Create_Reading_Fn
   ,Devspec2Array
   ,Do_Trigger_Fn
   ,FmtTime
-  ,GetAllReadings
-  ,Get_Def_And_Attr
+  ,Get_All_Readings_Fn
+  ,Get_Attr_Val_By_Def_Name_And_Attr_Name_Fn
+  ,Get_Def_And_Attr_Fn
   ,Get_Ptr_To_Definition_By_Name_Fn
   ,Get_Definitions_That_Match_DefSpec_String
   ,Get_Formated_Date_Time_Fn
@@ -90,7 +93,10 @@ SCDEFn_t SCDEFn = {
   ,Readings_Begin_Update_Fn
   ,Readings_Bulk_Update_Fn
   ,Readings_End_Update_Fn
-
+  ,Str_To_Float
+  ,Str_To_Uint16
+  ,Str_To_Uint32
+  
   // buid with : Argument Parser helpers ?
   ,ArgParse_SplitArgsToAllocatedMem
   ,ArgParse_SplitURLEncodedArgsToAllocatedMem
@@ -102,9 +108,6 @@ SCDEFn_t SCDEFn = {
 
   ,TimeNow
   ,WriteStatefile
-
-// added Fn (Perl -> C)
-  ,Get_Attr_Val_By_Def_Name_And_Attr_Name
 
 // not final
   ,ParseKVInputArgs

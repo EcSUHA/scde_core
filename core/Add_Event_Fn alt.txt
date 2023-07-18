@@ -48,32 +48,33 @@
  */
 void
 Add_Event_Fn(Entry_Common_Definition_t *p_entry_common_definition
-		,reading2_t *reading)
-//		,const time_t timestamp)
+		,const string_t notify_name
+		,const string_t notify_value
+		,const time_t timestamp)
 {
   // assign update_timestamp, only if not already done  *** SHOULD BE ALWAYS THERE ???***
-//  if ( (!p_entry_common_definition->p_changed->update_timestamp) && (timestamp) ) 
-//      p_entry_common_definition->p_changed->update_timestamp = timestamp;
+  if ( (!p_entry_common_definition->p_changed->update_timestamp) && (timestamp) ) 
+      p_entry_common_definition->p_changed->update_timestamp = timestamp;
 
   // entry_notify_t to process existing readings, start with first
   entry_notify_t *p_existing_entry_notify = 
       STAILQ_FIRST(&p_entry_common_definition->p_changed->head_notifies);
 
-  // loop through the existing notifies. May be it exists already
+  // loop through the existing readings. May be it is existing already
   while (true) {
 
-      // looped through the existing notifies, but no existing + matching notify found?
-	  // -> add new notify at tail of definitions notifies SLTQ
+      // looped through the existing readings, but no existing + matching reading found?
+	  // -> add new reading at tail of definitions readings SLTQ
       if (!p_existing_entry_notify) {
 
-          // alloc mem for new notify entry
+          // alloc mem for new reading entry
           entry_notify_t *p_new_entry_notify =
 	          malloc(sizeof(entry_notify_t));
 
           // zero the struct
 //        memset(p_new_entry_notify, 0, sizeof(entry_notify_t));
 
-/*          // fill reading with name
+          // fill reading with name
           p_new_entry_notify->notify.name.len =
 	          asprintf((char **) &p_new_entry_notify->notify.name.p_char
 	          ,"%.*s"
@@ -90,10 +91,6 @@ Add_Event_Fn(Entry_Common_Definition_t *p_entry_common_definition
 		  // set time (timestamp), if any
 		  if (timestamp) p_new_entry_notify->notify.timestamp = timestamp;
 		      else p_new_entry_notify->notify.timestamp = 0;
-*/
-
-          // insert the reading that notifies into the notify
-          p_new_entry_notify->notify.reading = reading;
 
           // add new reading to definitions readings SLTQ
 	      STAILQ_INSERT_TAIL(&p_entry_common_definition->p_changed->head_notifies,
@@ -103,9 +100,13 @@ Add_Event_Fn(Entry_Common_Definition_t *p_entry_common_definition
 	      break;
       }
 
-      // is there an existing reading with matching name? Then ?. 
-	  if ( p_existing_entry_notify->notify.reading == reading ) {
-/*
+      // is there an existing reading with matching name? Then replace old value. 
+	  if ( (p_existing_entry_notify->notify.name.len == 
+		    notify_name.len)
+			&& (!strncmp((const char*) p_existing_entry_notify->notify.name.p_char,
+				(const char*) notify_name.p_char,
+				notify_name.len)) ) {
+
           // upd. existing reading, 1. free existing value
 	      if (p_existing_entry_notify->notify.value.p_char) 
 				free(p_existing_entry_notify->notify.value.p_char);
@@ -121,7 +122,7 @@ Add_Event_Fn(Entry_Common_Definition_t *p_entry_common_definition
 		  // set time (timestamp), if any
 		  if (timestamp) p_existing_entry_notify->notify.timestamp = timestamp;
 		      else p_existing_entry_notify->notify.timestamp = 0;
-*/
+
 		  // updated old, done
 		  break;
       }
@@ -133,7 +134,7 @@ Add_Event_Fn(Entry_Common_Definition_t *p_entry_common_definition
 // -------------------------------------------------------------------------------------------------
 
   string_t td_string = 
-      Get_Formated_Date_Time_Fn(p_entry_common_definition->p_changed->update_timestamp);
+      Get_Formated_Date_Time_Fn(p_entry_common_definition->p_changed->update_timestamp); 
   printf("Add_Event_Fn done, common timestamp '%.*s', notifys stored in definition:\n",
       td_string.len, td_string.p_char);
   free(td_string.p_char);
@@ -141,20 +142,15 @@ Add_Event_Fn(Entry_Common_Definition_t *p_entry_common_definition
   // list currently added notifies stored for processing
   entry_notify_t *p_current_entry_notify;
   STAILQ_FOREACH(p_current_entry_notify, &p_entry_common_definition->p_changed->head_notifies, entries) {
-	  
-	  string_t td_string = Get_Formated_Date_Time_Fn(p_current_entry_notify->notify.reading->timestamp);	
-      string_t value_as_text = 
-          p_current_entry_notify->notify.reading->p_reading_type->p_get_raw_reading_as_text_fn(p_current_entry_notify->notify.reading);				
-
+  	
+      string_t td_string = Get_Formated_Date_Time_Fn(p_current_entry_notify->notify.timestamp);
 	  printf("L  %.*s | %.*s = %.*s\n"
 	      ,td_string.len
 		  ,td_string.p_char
-		  ,p_current_entry_notify->notify.reading->name.len
-		  ,p_current_entry_notify->notify.reading->name.p_char
-		  ,value_as_text.len
-          ,value_as_text.p_char);
-  
-	  free(value_as_text.p_char);
+		  ,p_current_entry_notify->notify.name.len
+		  ,p_current_entry_notify->notify.name.p_char
+		  ,p_current_entry_notify->notify.value.len
+		  ,p_current_entry_notify->notify.value.p_char);	
 	  free(td_string.p_char);
   }
 

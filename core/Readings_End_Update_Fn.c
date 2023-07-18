@@ -43,8 +43,8 @@ Readings_End_Update_Fn(Entry_Common_Definition_t *p_entry_common_definition,
       Log("Readings_End_Update_Fn", 1, // <- Fn, log-level
           "Error! Readings_End_Update_Fn called without calling Readings_Begin_Update_Fn "
           "first in Def-Name: '%.*s'."
-		  ,p_entry_common_definition->name
-		  ,p_entry_common_definition->nameLen);
+		  ,p_entry_common_definition->nname.p_char
+		  ,p_entry_common_definition->nname.len);
       #endif
       
 	  return 0;
@@ -174,7 +174,7 @@ Readings_End_Update_Fn(Entry_Common_Definition_t *p_entry_common_definition,
   }*/
 
 
-
+  //sucht das state reading in den definitions-readings und packt es formatiert in den/das STATE!
   // Evaluate the state-reading embedded in this definition
   Eval_State_Format_Fn(p_entry_common_definition);
 
@@ -194,11 +194,20 @@ Readings_End_Update_Fn(Entry_Common_Definition_t *p_entry_common_definition,
           STAILQ_FIRST(&p_entry_common_definition->p_changed->head_notifies);
       while (p_displayed_entry_notify != NULL) {
 
-	      printf("L readingName:'%.*s', readingValue:'%.*s'\n"
-		      ,p_displayed_entry_notify->notify.name.len
-		      ,p_displayed_entry_notify->notify.name.p_char
-		      ,p_displayed_entry_notify->notify.value.len
-		      ,p_displayed_entry_notify->notify.value.p_char);
+	      string_t td_string = Get_Formated_Date_Time_Fn(p_displayed_entry_notify->notify.reading->timestamp);	
+          string_t value_as_text = 
+              p_displayed_entry_notify->notify.reading->p_reading_type->p_get_raw_reading_as_text_fn(p_displayed_entry_notify->notify.reading);				
+
+	      printf("L  %.*s | %.*s = %.*s\n"
+	         ,td_string.len
+		      ,td_string.p_char
+		      ,p_displayed_entry_notify->notify.reading->name.len
+		      ,p_displayed_entry_notify->notify.reading->name.p_char
+		      ,value_as_text.len
+              ,value_as_text.p_char);
+  
+	      free(value_as_text.p_char);
+	      free(td_string.p_char);
 
 		  p_displayed_entry_notify = STAILQ_NEXT(p_displayed_entry_notify, entries);
        }
@@ -209,18 +218,18 @@ Readings_End_Update_Fn(Entry_Common_Definition_t *p_entry_common_definition,
           STAILQ_FIRST(&p_entry_common_definition->p_changed->head_notifies);
       while (p_current_entry_notify != NULL) {
 
-	      if (p_current_entry_notify->notify.name.p_char) 
+/*	      if (p_current_entry_notify->notify.name.p_char) 
 	          free(p_current_entry_notify->notify.name.p_char);
           if (p_current_entry_notify->notify.value.p_char) 
 	          free(p_current_entry_notify->notify.value.p_char);
-
-          entry_notify_t *p_last_entry_reading =
+*/
+          entry_notify_t *p_last_entry_notify =
               p_current_entry_notify;
 
 		  // get next Common_Definition for processing
 		  p_current_entry_notify = STAILQ_NEXT(p_current_entry_notify, entries);
 		
-		  free(p_last_entry_reading);
+		  free(p_last_entry_notify);
       }
 
       // delete the changed_readings struct, too + mark as not in use = NULL

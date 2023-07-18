@@ -22,17 +22,15 @@
  *  FName: Do_Trigger_Fn
  *  Desc:  
  *  Info: 
- *  Para: Entry_Definition_t *p_entry_common_definition -> definition for which notifies should be 
- *                                                         triggered
- *        char *p_changed_state_value_as_text -> updated state value, as text, or NULL if none, will
- *                                               be updated and triggert,too
+ *  Para: Entry_Definition_t *p_entry_common_definition -> definition for xx should be triggered
+ *        Entry_Reading_s *p_changed_state -> updated state, or NULL if none
  *  Rets: Entry_String_t * -> SLTQ head, stores multiple strings, 
  *                                       the definition CMD line and attribute CMD lines, NULL=NONE
  * -------------------------------------------------------------------------------------------------
  */
 Entry_String_t *
 Do_Trigger_Fn(Entry_Common_Definition_t *p_entry_common_definition,
-    char *p_changed_state_value_as_text)
+    entry_notify_t *p_changed_state)
 {
   // one return message ?
   Entry_String_t *p_entry_ret_msg = NULL;
@@ -40,16 +38,16 @@ Do_Trigger_Fn(Entry_Common_Definition_t *p_entry_common_definition,
 // -------------------------------------------------------------------------------------------------
 
   #if CORE_SCDE_DBG >= 7
-  if (p_changed_state_value_as_text) {
-   
+  if (p_changed_state) {
       Log("Do_Trigger_Fn",7,
-          "Got definition '%.*s' to trigger, including changed 'state' value '%s'."
+          "Got definition '%.*s' to trigger, including additional reading '%.*s' with value '%.*s'."
           ,p_entry_common_definition->nameLen
 	      ,p_entry_common_definition->name
-          ,p_changed_state_value_as_text);
-  }
-  
-  else {
+	      ,p_changed_state->notify.name.len
+          ,p_changed_state->notify.name.p_char
+          ,p_changed_state->notify.value.len
+          ,p_changed_state->notify.value.p_char);
+  } else {
       Log("Do_Trigger_Fn",7,
           "Got definition '%.*s' to trigger."
          ,p_entry_common_definition->nameLen
@@ -63,66 +61,50 @@ Do_Trigger_Fn(Entry_Common_Definition_t *p_entry_common_definition,
 
 // -------------------------------------------------------------------------------------------------
 
-  // got an changed state value ? -> take value amd push it to the definitions changed_readings queue
-  if (p_changed_state_value_as_text) {
+  // got an changed state ? -> push it to the definitions changed_readings queue
+  if (p_changed_state) {
 
-//    Get_Reading_From_Definition_by_Text() //call!
-
-      // identify state reading, if any
- 	  entry_reading2_t *p_entry_state_reading;
-      STAILQ_FOREACH(p_entry_state_reading, &p_entry_common_definition->head_readings2, entries) {
+      // NO changed readings? -> initialize changed_readings first
+      if (!p_entry_common_definition->p_changed) {
       
-      	  if ( (p_entry_state_reading->reading.name.len == 5) &&
-          (!strncasecmp((const char*) p_entry_state_reading->reading.name.p_char,
-		  "state", 5)) ) {
-		  
-		      break;
-		  }
+          // alloc mem for changed structure (changed_t)
+          changed_t *p_changed =
+	          (changed_t *) malloc(sizeof(changed_t));
+
+          // zero the changed_readings structure (Changed_Readings_t)
+//        memset(p_changed, 0, sizeof(Changed_Readings_t));
+
+          // changed_readings - single-linked-tail-queue that stores the readings - init head
+          STAILQ_INIT(&p_changed->head_notifies);
+          
+          // mark timestamp as not initialized
+          p_changed->update_timestamp = 0;
+          
+          // store the changed_readings structure
+          p_entry_common_definition->p_changed =
+              p_changed;
       }
       
-      // update the state-reading value
-      p_entry_state_reading->reading.p_reading_type->p_Store_Raw_Reading_From_Text(&p_entry_state_reading->reading,
-          p_changed_state_value_as_text);
-
-      // found the state reading ?
-      if (p_entry_state_reading) {
-
-          // NO changed readings? -> initialize changed_readings first
-          if (!p_entry_common_definition->p_changed) {
-      
-              // alloc mem for changed structure (changed_t)
-              changed_t *p_changed =
-	              (changed_t *) malloc(sizeof(changed_t));
-
-              // zero the changed_readings structure (Changed_Readings_t)
-//            memset(p_changed, 0, sizeof(Changed_Readings_t));
-
-              // changed_readings - single-linked-tail-queue that stores the readings - init head
-              STAILQ_INIT(&p_changed->head_notifies);
-          
-              // mark timestamp as not initialized
-              p_changed->update_timestamp = 0;
-          
-              // store the changed_readings structure
-              p_entry_common_definition->p_changed =
-                  p_changed;     
-          }
-          
-          // add the state changed event
-          Add_Event_Fn(p_entry_common_definition ,&p_entry_state_reading->reading);
-      }        
+      // add changed state reading to definitions changed_readings queue
+      STAILQ_INSERT_TAIL(&p_entry_common_definition->p_changed->head_notifies
+          ,p_changed_state, entries);
   }
   
   // no changed state or readings? -> return
-  if (!p_entry_common_definition->p_changed) {
+  else if (!p_entry_common_definition->p_changed) {
   
       return p_entry_ret_msg;
   }
 
 // -------------------------------------------------------------------------------------------------
  
+
+ 
+ 
   // get current time
 //  time_t now = GetUniqueTiSt(); // die quelle kann nicht bleiben!!!
+
+
 
   // have max? + not in inner trigger loop ?
   if ( (1) && (!(p_entry_common_definition->Common_CtrlRegA & (F_IN_TRIGGER))) ) {
@@ -214,39 +196,39 @@ Do_Trigger_Fn(Entry_Common_Definition_t *p_entry_common_definition,
   entry_notify_t *p_listed_entry_notify;
   STAILQ_FOREACH(p_listed_entry_notify, &p_entry_common_definition->p_changed->head_notifies, entries) {
   	
-      string_t td_string = Get_Formated_Date_Time_Fn(p_listed_entry_notify->notify.reading->timestamp);	
-      string_t value_as_text = 
-          p_listed_entry_notify->notify.reading->p_reading_type->p_get_raw_reading_as_text_fn(p_listed_entry_notify->notify.reading);				
-
+      string_t td_string = Get_Formated_Date_Time_Fn(p_listed_entry_notify->notify.timestamp);
 	  printf("L  %.*s | %.*s = %.*s\n"
 	      ,td_string.len
 		  ,td_string.p_char
-		  ,p_listed_entry_notify->notify.reading->name.len
-		  ,p_listed_entry_notify->notify.reading->name.p_char
-		  ,value_as_text.len
-          ,value_as_text.p_char);
-  
-	  free(value_as_text.p_char);
+		  ,p_listed_entry_notify->notify.name.len
+		  ,p_listed_entry_notify->notify.name.p_char
+		  ,p_listed_entry_notify->notify.value.len
+		  ,p_listed_entry_notify->notify.value.p_char);	
 	  free(td_string.p_char);
   }
 
 // -------------------------------------------------------------------------------------------------
 
-  // delete currently added notifies from notify list
+  // delete currently added readings from notify list
   entry_notify_t *p_current_entry_notify = 
       STAILQ_FIRST(&p_entry_common_definition->p_changed->head_notifies);
   while (p_current_entry_notify != NULL) {
 
-      entry_notify_t *p_last_entry_notify =
+      if (p_current_entry_notify->notify.name.p_char) 
+	      free(p_current_entry_notify->notify.name.p_char);
+      if (p_current_entry_notify->notify.value.p_char) 
+	      free(p_current_entry_notify->notify.value.p_char);
+
+      entry_notify_t *p_last_entry_reading =
           p_current_entry_notify;
 
       // get next Common_Definition for processing
 	  p_current_entry_notify = STAILQ_NEXT(p_current_entry_notify, entries);
 		
-	  free(p_last_entry_notify);
+	  free(p_last_entry_reading);
   }
 
-  // finally the 'changed' information stuct, including marking it as not initialized = NULL
+  // finally the changed readings stuct, including marking it as not initialized = NULL
   free(p_entry_common_definition->p_changed);
   p_entry_common_definition->p_changed = NULL;
  

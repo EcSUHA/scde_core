@@ -39,6 +39,35 @@ Log3(const uint8_t *p_name_char
 		,const char *format
 		,...)
 {
+  char attrkey_verbose[] = "verbose";
+  string_t global_definition = {(uint8_t*) "global", 6};
+    
+  string_t name;
+  name.p_char = p_name_char;
+  name.len = name_len;
+  
+  // attribute verbose assigned to definition, to control definitions log-level?
+  char *custom_log_level =
+      Get_Attr_Val_By_Def_Name_And_Attr_Name_Fn(&name, &attrkey_verbose);
+				        
+  // if not, attribute verbose assigned to 'global', to control global log-level?			        
+  if (!custom_log_level) {
+
+      custom_log_level =
+          Get_Attr_Val_By_Def_Name_And_Attr_Name_Fn(&global_definition, &attrkey_verbose);
+  }
+
+  // else start with default log-level 5
+  int adjusted_log_level = 9;
+
+  // analyze custom log-level string (from verbose attribute value)
+  if (custom_log_level) adjusted_log_level = atoi(custom_log_level);
+
+  // according to log-level: do we need to log it?
+  if ( adjusted_log_level < log_level ) return;
+
+  // ok, create log 
+
   // for current time
   time_t nowTist;
 
@@ -49,8 +78,8 @@ Log3(const uint8_t *p_name_char
   struct tm timeinfo;
   localtime_r(&nowTist, &timeinfo);
 
-  // time,loglevel,name
-  printf("%d.%d.%d %d:%d:%d (%d) %.*s: "	//Log3|
+  // time,l oglevel, name and details
+  printf("%d.%d.%d %d:%d:%d (%d) %.*s: "
 		,timeinfo.tm_year+1900
 		,timeinfo.tm_mon+1
 		,timeinfo.tm_mday
@@ -69,41 +98,7 @@ Log3(const uint8_t *p_name_char
 
   // finalize line
   printf("\n");
-
-
-
-
-
-
-
-
-  //= GetAssignedAttribute("global","verbose");
-
- // is Device
-//stp1: $dev = $dev->{NAME} if(defined($dev) && ref($dev) eq "HASH");
-
-/*stp2:
-  if(defined($dev) &&
-     defined($attr{$dev}) &&
-     defined (my $devlevel = $attr{$dev}{verbose}))
-	{
-    	return if($loglevel > $devlevel);
-	}
-  else
-	{
-	return if($loglevel > $attr{global}{verbose});
-	}*/
-
-
-
-
-/*  else
-	{
-	if ( > GetAttribute("global","verbose")
-
-
-  char* DevVerbose = GetAttribute(Dev,"verbose");
-  char* GlobalVerbose = GetAttribute("global","verbose");
-  if ( (GlobalVerbose) &&
-*/
-  }
+}
+  
+  
+  

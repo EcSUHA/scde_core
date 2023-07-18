@@ -257,25 +257,42 @@ strBufferLen = 3000;
 						,Common_Definition->name
 						,32-Common_Definition->nameLen
 						,"                                ");
+/* not good
+					// the state
+					if ( Common_Definition->p_state) {
+
+						// we have a state
+						string_t state_as_text = 
+                            Common_Definition->p_state->p_entry_reading_type->p_get_raw_reading_as_text_fn(Common_Definition->p_state);				
+						
+						strBufferOffset += snprintf(wBufStart + strBufferOffset
+						    ,strBufferLen
+						    ,"%.*s)\r\n"
+						    ,state_as_text.len
+						    ,state_as_text.p_char);
+						
+                        free(state_as_text.p_char);
+					}
+*/
 
 					// the state
-					if ( Common_Definition->state_reading_value.p_char) {
+        			if ( Common_Definition->state.p_char) {
 
 						// we have a state
 						strBufferOffset += snprintf(wBufStart + strBufferOffset
 						,strBufferLen
 						,"%.*s)\r\n"
-						,Common_Definition->state_reading_value.len
-						,Common_Definition->state_reading_value.p_char);
+						,Common_Definition->state.len
+						,Common_Definition->state.p_char);
 
 					}
 
-					else {
+					else { // should never happen !
 
 						// no state
 						strBufferOffset += snprintf(wBufStart + strBufferOffset
 							,strBufferLen
-							,"?)\r\n");
+							,"-)\r\n");
 
 					}
 				}
@@ -427,7 +444,36 @@ retMsg->strTextLen = strBufferLen;
 			strBufferOffset += snprintf(wBufStart + strBufferOffset
 				,strBufferLen
 				,"  Readings:\r\n");
-			
+
+
+			// list readings stored in definition
+			entry_reading2_t *p_current_entry_reading;
+			STAILQ_FOREACH(p_current_entry_reading, &Common_Definition->head_readings2, entries) {
+
+				// get timestamp as text
+				string_t timestamp_as_text =
+					SCDEFn->get_formated_date_time_fn(p_current_entry_reading->reading.timestamp);
+
+				// get reading value as text	
+				string_t value_as_text = 
+                    p_current_entry_reading->reading.p_reading_type->p_get_raw_reading_as_text_fn(&p_current_entry_reading->reading);				
+
+					strBufferOffset += snprintf(wBufStart + strBufferOffset
+						,strBufferLen
+						,"  %.*s | %.*s = %.*s %s\r\n"
+						,timestamp_as_text.len
+						,timestamp_as_text.p_char
+						,p_current_entry_reading->reading.name.len
+						,p_current_entry_reading->reading.name.p_char
+						,value_as_text.len
+						,value_as_text.p_char
+						,p_current_entry_reading->reading.unit);
+
+				free(value_as_text.p_char);
+				free(timestamp_as_text.p_char);
+			}
+
+/* old
 			// list readings stored for definition after processing
 			Entry_Reading_t *currentReadingsSLTQE;
 			STAILQ_FOREACH(currentReadingsSLTQE, &Common_Definition->head_readings, entries) {
@@ -449,16 +495,61 @@ retMsg->strTextLen = strBufferLen;
 				free(strText.p_char);
 
 			}
+*/
 
+/* new not good
 			// add STATE
-			strBufferOffset += snprintf(wBufStart + strBufferOffset
-				,strBufferLen
-				,"  STATE%.*s %.*s\r\n"
-				,10-4 //STATE LEN
-				,"                                "
-				,Common_Definition->state_reading_value.len
-				,Common_Definition->state_reading_value.p_char);
+			if ( Common_Definition->p_state) {
 
+			    // we have a state
+			    string_t state_as_text = 
+                Common_Definition->p_state->p_entry_reading_type->p_get_raw_reading_as_text_fn(Common_Definition->p_state);				
+						
+		        strBufferOffset += snprintf(wBufStart + strBufferOffset
+				    ,strBufferLen
+				    ,"  STATE%.*s %.*s\r\n"
+				    ,10-4                       //STATE LEN
+				    ,"                                "
+				    ,state_as_text.len
+				    ,state_as_text.p_char);
+						
+                free(state_as_text.p_char);
+			}
+
+		    else { // should never happen!
+
+			    // no state
+			    strBufferOffset += snprintf(wBufStart + strBufferOffset
+			        ,strBufferLen
+				    ,"  STATE%.*s -\r\n"
+				    ,10-4                       //STATE LEN
+				    ,"                                ");
+			}
+*/
+
+			// the state
+        	if ( Common_Definition->state.p_char) {
+
+			    // we have a state
+			    strBufferOffset += snprintf(wBufStart + strBufferOffset
+				  ,strBufferLen
+				  ,"  STATE%.*s %.*s\r\n"
+				  ,10-4 //STATE LEN
+				  ,"                                "
+				  ,Common_Definition->state.len
+				  ,Common_Definition->state.p_char);
+			 }
+
+			else { // no state set
+
+			    // no state
+			    strBufferOffset += snprintf(wBufStart + strBufferOffset
+			        ,strBufferLen
+				    ,"  STATE%.*s -\r\n"
+				    ,10-4                       //STATE LEN
+				    ,"                                ");
+			}
+ 
 			// add TYPE
 			strBufferOffset += snprintf(wBufStart + strBufferOffset
 				,strBufferLen
@@ -479,19 +570,17 @@ retMsg->strTextLen = strBufferLen;
 			// list attributes stored for definition after processing
 
 			// get first entry from our 'attr_value' list
-  			Entry_Attr_Value_t* p_entry_attr_value = 
-				LIST_FIRST(&Common_Definition->head_attr_value);
+  			entry_attr_value_t* p_entry_attr_value = 
+				LIST_FIRST(&Common_Definition->head_attr_values);
 
   			// search the lists 'attr_value' entries for the requested 'attr_name'
  			while ( p_entry_attr_value != NULL ) {
 
 				strBufferOffset += snprintf(wBufStart + strBufferOffset
 						,strBufferLen
-						,"  %.*s = %.*s\r\n"
-						,p_entry_attr_value->p_entry_attr_name->attr_name.len
-						,p_entry_attr_value->p_entry_attr_name->attr_name.p_char
-						,p_entry_attr_value->attr_value.len
-						,p_entry_attr_value->attr_value.p_char);
+						,"  %s = %s\r\n"
+						,p_entry_attr_value->p_entry_attr_name->p_attr_name
+						,p_entry_attr_value->p_attr_value);
 
 				// load next 'attr_value' entry to process it
 				p_entry_attr_value = LIST_NEXT(p_entry_attr_value, entries);

@@ -23,61 +23,60 @@
  *  Desc: Returns an SLTQ-head, links to the definition cmd-line and the attribute cmd-lines as
  *        entrys from the given 'entry_definition'
  *  Info: 
- *  Para: Entry_Definition_t* p_entry_definition -> definition for which Def and Attr cmds are requested
+ *  Para: Entry_Common_Definition_t* p_entry_common_definition -> definition for which Def and Attr cmds are requested
  *  Rets: struct Head_String_s -> SLTQ head, stores multiple strings, 
  *                                       the definition CMD line and attribute CMD lines, NULL=NONE
  * --------------------------------------------------------------------------------------------------
  */
-struct Head_String_s
-Get_Def_And_Attr(Entry_Definition_t* p_entry_definition)
+struct head_string_s
+Get_Def_And_Attr_Fn(Entry_Common_Definition_t *p_entry_common_definition)
 {
-  // prepare STAILQ head for multiple retMsg-string storage
-  struct Head_String_s head_string;
+  // prepare STAILQ head that stores def_and_attr_text elements
+  struct head_string_s head_def_and_attr_text;
 
   // initialize the queue head
-  STAILQ_INIT(&head_string);
+  STAILQ_INIT(&head_def_and_attr_text);
 
 //---------------------------------------------------------------------------------------------------
 
   // first get the define cmd-line, but skip global definition - its defined by SCDE on startup
 	
   if (! //NOT! skip "global" definition!
-	(
-	(p_entry_definition->nameLen == 6) &&
-	     (memcmp(p_entry_definition->name, "Global", 6) == 0) ) ) {
+	( (p_entry_common_definition->nameLen == 6) &&
+	     ( strncasecmp((char *)p_entry_common_definition->name, "Global", 6) == 0 ) ) ) {
 		
 	// alloc new entry string, the retMsg
-	Entry_String_t* p_entry_string =
-		malloc (sizeof (Entry_String_t));
+	entry_string_t* p_def_text =
+		malloc(sizeof(entry_string_t));
 		
-	// check: are definition args stored?
-	if (p_entry_definition->definition.p_char) {
+	// check: are definition args stored ?
+	if (p_entry_common_definition->definition.p_char) {
 		
 		// write define line with definition args and store it into entry
-		p_entry_string->string.len = asprintf(&p_entry_string->string.p_char,
+		p_def_text->string.len = asprintf(&p_def_text->string.p_char,
 			"define %.*s %.*s %.*s\r\n",
-			p_entry_definition->nameLen,
-			p_entry_definition->name,
-			p_entry_definition->module->provided->typeNameLen,
-			p_entry_definition->module->provided->typeName,
-			p_entry_definition->definition.len,
-			p_entry_definition->definition.p_char);
+			p_entry_common_definition->nameLen,
+			p_entry_common_definition->name,
+			p_entry_common_definition->module->provided->typeNameLen,
+			p_entry_common_definition->module->provided->typeName,
+			p_entry_common_definition->definition.len,
+			p_entry_common_definition->definition.p_char);
 	}
 		
 	// no definition args stored ...
 	else {
 
 		// write define line without definition args and store it into entry
-		p_entry_string->string.len = asprintf(&p_entry_string->string.p_char,
+		p_def_text->string.len = asprintf(&p_def_text->string.p_char,
 			"define %.*s %.*s\r\n",
-			p_entry_definition->nameLen,
-			p_entry_definition->name,
-			p_entry_definition->module->provided->typeNameLen,
-			p_entry_definition->module->provided->typeName);
+			p_entry_common_definition->nameLen,
+			p_entry_common_definition->name,
+			p_entry_common_definition->module->provided->typeNameLen,
+			p_entry_common_definition->module->provided->typeName);
 	}
 		
 	// insert entry string (the retMsg) into stail-queue
-	STAILQ_INSERT_TAIL(&head_string, p_entry_string, entries);		
+	STAILQ_INSERT_TAIL(&head_def_and_attr_text, p_def_text, entries);		
   }
 
 //---------------------------------------------------------------------------------------------------
@@ -85,56 +84,53 @@ Get_Def_And_Attr(Entry_Definition_t* p_entry_definition)
   // second the attribute(s)
 
   // loop the attributes stored for this definition for processing
-  Entry_Attr_Value_t* p_entry_attr_value;
+  entry_attr_value_t *p_entry_attr_value;
 
-  LIST_FOREACH(p_entry_attr_value, &p_entry_definition->head_attr_value, entries) {
+  LIST_FOREACH(p_entry_attr_value, &p_entry_common_definition->head_attr_values, entries) {
 
 	if (
 		// is current entry the "global" Definition ? and
-		( ( p_entry_definition->nameLen == 6 ) &&
-		( memcmp ( p_entry_definition->name, "Global", 6) == 0 ) ) &&
+		( ( p_entry_common_definition->nameLen == 6 ) &&
+		( strncasecmp((char *)p_entry_common_definition->name, "Global", 6) == 0 ) ) &&
 
 		(
 
 		// is the 'attr-name' "configfile"? or
-		( ( p_entry_attr_value->p_entry_attr_name->attr_name.len == 10 ) &&
-		( memcmp ( p_entry_attr_value->p_entry_attr_name->attr_name.p_char,
-			 "configfile", 10 ) == 0 ) ) ||
+		( strcasecmp(p_entry_attr_value->p_entry_attr_name->p_attr_name,
+			 "configfile") == 0 ) ||
 
 		// is the 'attr-name' "version"?
-		( ( p_entry_attr_value->p_entry_attr_name->attr_name.len == 7 ) &&
-		( memcmp ( p_entry_attr_value->p_entry_attr_name->attr_name.p_char,
-			"version", 7 ) == 0 ) ) 
+		( strcasecmp(p_entry_attr_value->p_entry_attr_name->p_attr_name,
+			"version") == 0 )  
 						)
 							) {
 
-		// When exec here: current Attribute is "configfile" or "version"
-		// Skip, its defined by SCDE on startup
+		// when exec till here: current Attribute is "configfile" or "version"
+		// skip, because its defined by SCDE on startup
 	}
 
-	// standard Attribute, that should be stored ..
+	// standard attribute, that should be stored ..
 	else {
+	
 		// alloc new entry string, the retMsg
-		Entry_String_t* p_entry_string =
-			malloc (sizeof (Entry_String_t));
+		entry_string_t *p_attr_text =
+			malloc (sizeof(entry_string_t));
 
 		// write attr-line to allocated memory and store to into entry
-		p_entry_string->string.len = asprintf(&p_entry_string->string.p_char,
-			"attr %.*s %.*s %.*s\r\n",
-			p_entry_definition->nameLen,
-			p_entry_definition->name,
-			p_entry_attr_value->p_entry_attr_name->attr_name.len,
-			p_entry_attr_value->p_entry_attr_name->attr_name.p_char,
-			p_entry_attr_value->attr_value.len,
-			p_entry_attr_value->attr_value.p_char);
+		p_attr_text->string.len = asprintf(&p_attr_text->string.p_char,
+			"attr %.*s %s %s\r\n",
+			p_entry_common_definition->nname.len,
+			p_entry_common_definition->nname.p_char,
+			p_entry_attr_value->p_entry_attr_name->p_attr_name,
+			p_entry_attr_value->p_attr_value);
 
 		// insert entry string (the retMsg) into stail-queue
-		STAILQ_INSERT_TAIL(&head_string, p_entry_string, entries);
+		STAILQ_INSERT_TAIL(&head_def_and_attr_text, p_attr_text, entries);
 	}
   }
 
   // return STAILQ head, stores multiple entries string (the retMsg), if STAILQ_EMPTY -> none
-  return head_string;
+  return head_def_and_attr_text;
 }
 
 

@@ -18,6 +18,8 @@
 #include "SCDE.h"
 
 
+//setstate myBH1750 2021-1-6 15:17:3 BH1750:STATE state luminosity: 36.7 lx
+
 
 /* --------------------------------------------------------------------------------------------------
  *  FName: WriteStatefile
@@ -39,10 +41,10 @@ WriteStatefile()
 
   // get attribute "global->statefile" value
   String_t state_filename_attr_definition = {(uint8_t*) "global", 6};
-  String_t state_filename_attr_name = {(uint8_t*) "statefile", 9};
+  char state_filename_attr_name[] = "statefile";
  
-  String_t* p_state_filename_attr_value =
-		Get_Attr_Val_By_Def_Name_And_Attr_Name(&state_filename_attr_definition,
+  char *p_state_filename_attr_value =
+		Get_Attr_Val_By_Def_Name_And_Attr_Name_Fn(&state_filename_attr_definition,
 			 &state_filename_attr_name);
 
 	// attribute not found
@@ -54,9 +56,8 @@ WriteStatefile()
 
 		// response with error text
 		retMsg->strTextLen = asprintf(&retMsg->strText
-			,"Error, Arribute %.*s not found in Definition %.*s !\r\n"
-			,state_filename_attr_name.len
-			,state_filename_attr_name.p_char
+			,"Error, Arribute %s not found in Definition %.*s !\r\n"
+			,(char*) &state_filename_attr_name
 			,state_filename_attr_definition.len
 			,state_filename_attr_definition.p_char);
 
@@ -66,7 +67,7 @@ WriteStatefile()
 		// return STAILQ head, stores multiple retMsg, if NULL -> no retMsg-entries
 		return headRetMsgMultiple;
 	}
-
+/*
 	// attribute found, but value not assigned
 	if (!p_state_filename_attr_value->p_char) {
 		
@@ -91,7 +92,7 @@ WriteStatefile()
 		// return STAILQ head, stores multiple retMsg, if NULL -> no retMsg-entries
 		return headRetMsgMultiple;
 	}
-	
+*/	
 	// my $now = gettimeofday();
 	time_t now = TimeNow();
 			
@@ -102,9 +103,8 @@ WriteStatefile()
 	// create statefilename string
 	char *stateFile;
 	asprintf(&stateFile
-			,"/spiffs/%.*s.cfg"
-			,p_state_filename_attr_value->len
-			,p_state_filename_attr_value->p_char);
+			,"/spiffs/%s.cfg"
+			,p_state_filename_attr_value);
 	 
 //	// free attribute statefile value
 //	free (attrStateFNValueName->strText);	 
@@ -134,14 +134,15 @@ WriteStatefile()
 		return headRetMsgMultiple;
 	}
 
-	// free our prepared filename
-	free(stateFile);	//Noch benötigt ? Vorher freigeben?, dann nicht doppelt
+  // free our prepared filename
+  free(stateFile);	//Noch benötigt ? Vorher freigeben?, dann nicht doppelt
 
-	// stores the time		
-	struct tm timeinfo;
+
+  // stores the time-text		
+  struct tm timeinfo;
 
   // to fill with: "Sat Aug 19 14:16:59 2017"
-	char strftime_buf[64];
+  char strftime_buf[64];
 
 /*
   // PREPARATIONS OF INTERNAL CLOCK
@@ -154,10 +155,10 @@ WriteStatefile()
 */
 
   // get time to struct timeinfo
-	localtime_r(&now, &timeinfo);
+  localtime_r(&now, &timeinfo);
 
   // get strftime-text into strftime_buf 
-	strftime(strftime_buf, sizeof(strftime_buf), "%c", &timeinfo);
+  strftime(strftime_buf, sizeof(strftime_buf), "%c", &timeinfo);
 
   // start statefile with date:-> #Sat Aug 19 14:16:59 2017
   fprintf(sFH,"#%s\r\n", strftime_buf);
@@ -194,67 +195,63 @@ WriteStatefile()
 		*/	
 
 
-	// loop the definition for processing
-	Common_Definition_t *Common_Definition;
-	STAILQ_FOREACH(Common_Definition, &SCDERoot.HeadCommon_Definitions, entries) {
+  // loop the definitions to process its readings
+  Entry_Common_Definition_t *p_entry_common_definition;
+  STAILQ_FOREACH(p_entry_common_definition, &SCDERoot.head_definition, entries) {
 		
-//#       next if($defs{$d}{TEMPORARY});		//temporäre nicht!!
-		
-	/*	LOGD("calling GetAllReadings for:%.*s\n"
-			,Common_Definition->nameLen
-			,Common_Definition->name);*/
+      // temporary definitions should not be processed
+      if (p_entry_common_definition->defCtrlRegA & F_TEMPORARY) continue;
 
-		struct headRetMsgMultiple_s headRetMsgMultipleFromFn =
-			GetAllReadings(Common_Definition);
+      // get STAILQ head with multiple readings_as_text
+      struct head_string_s head_readings_as_text =
+          Get_All_Readings_Fn(p_entry_common_definition);
 
-		// if RetMsgMultiple queue not empty -> got readings from definition
-		if (!STAILQ_EMPTY(&headRetMsgMultipleFromFn)) {
+	  // if queue not empty -> got readings for definition
+	  if (!STAILQ_EMPTY(&head_readings_as_text)) {
 
-			// get the queue entries from retMsgMultiple till empty
-			while (!STAILQ_EMPTY(&headRetMsgMultipleFromFn)) {
+		  // get further queue entries, till empty
+		  while (!STAILQ_EMPTY(&head_readings_as_text)) {
 
-				// get a retMsg element from queue
-				strTextMultiple_t *retMsg =
-					STAILQ_FIRST(&headRetMsgMultipleFromFn);
+			  // get a retMsg element from queue
+			  Entry_String_t *p_reading_as_text =
+			      STAILQ_FIRST(&head_readings_as_text);
 
-			/*	LOGD("store setstate line to File: %.*s\n"
-					,retMsg->strTextLen
-					,retMsg->strText);*/
+			  // store setstate line
+			  fprintf(sFH,"%.*s"
+			      ,p_reading_as_text->string.len
+				  ,p_reading_as_text->string.p_char);
 
-				// store setstate line
-				fprintf(sFH,"%.*s\n"
-					,retMsg->strTextLen
-					,retMsg->strText);
+			  // done, remove this entry
+			  STAILQ_REMOVE_HEAD(&head_readings_as_text, entries);
 
-				// done, remove this entry
-				STAILQ_REMOVE_HEAD(&headRetMsgMultipleFromFn, entries);
+              // cleanup text + entry
+			  free(p_reading_as_text->string.p_char);
+		      free(p_reading_as_text);
+          }
+      }
+  }
 
-				free(retMsg->strText);
-				free(retMsg);
-			}
-		}
-	}
-
-	// close statefile
-	fclose(sFH);
+  // close statefile
+  fclose(sFH);
 
 
-
-
-
-//filecontent debug
-int c;
-FILE *file;
-file = fopen("/spiffs/state.cfg", "r");
-if (file) {
+  // debug-> print file content
+  printf("\ndbg content/spiffs/state.cfg:\n");
+  int c;
+  FILE *file;
+  file = fopen("/spiffs/state.cfg", "r");
+  if (file) {
     while ((c = getc(file)) != EOF)
-        putchar(c);
+      putchar(c);
     fclose(file);
+  }
+  printf("dbg end\n");
+  // debug end
+
+
+  // return STAILQ head, stores multiple retMsg with readings, if NULL -> none
+  return headRetMsgMultiple;
 }
 
 
-	// return STAILQ head, stores multiple retMsg with readings, if NULL -> none
-	return headRetMsgMultiple;
-
-}
 

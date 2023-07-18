@@ -31,7 +31,7 @@ InitSCDERoot(void) {
 
   LIST_INIT(&SCDERoot.head_definitions_to_be_notified);
   
-  LIST_INIT(&SCDERoot.head_attr_name);
+  LIST_INIT(&SCDERoot.head_attr_names);
 
   STAILQ_INIT(&SCDERoot.headCommands);
 

@@ -32,8 +32,8 @@ enum argparse_option_type {
     ARGPARSE_OPT_BOOLEAN,
     ARGPARSE_OPT_BIT,
     /* options with arguments (optional or required) */
-    ARGPARSE_OPT_INT,
-    ARGPARSE_OPT_UINT8,
+    ARGPARSE_OPT_INT32,     // int32_t
+    ARGPARSE_OPT_UINT8,     // uint8_t
     ARGPARSE_OPT_FLOAT,
     ARGPARSE_OPT_STRING,
 
@@ -129,13 +129,14 @@ struct argparse {
     const char *description;
     const char *epilog;
     // internal context
-    int argc;                   // initial number of args, reduced in processing loop
+    int argc;                       // initial number of args, reduced in processing loop
     const char **argv;
     const char **out;
-    int cpidx;                  //
-    const char *optvalue;       // current processed option value (-x)
-    Entry_String_t *ret_msg;     // leadin of the ret msg
-	uint64_t parsed_args_bf;    //
+    int cpidx;                      //
+    const char *optvalue;           // current processed option value (-x)
+    entry_string_t *ret_msg;        // leadin of the ret msg
+	uint64_t parsed_args_bf;        // can be used by user -> mark parsed args, by bit-set
+	uint32_t affected_readings_bf;  // can be used by user -> mark readings touched, by bit-set
 // überlegungen ...
 //  uint64_t requiredKVBF;	    // Bit-Field set by user -> keys required for a successful parse
 //  uint64_t forbiddenKVBF;	    // Bit-Field set by user -> keys forbidden for a successful parse
@@ -157,8 +158,7 @@ int argparse_help_cb(struct argparse *self
 #define OPT_END()        { ARGPARSE_OPT_END, 0, NULL, NULL, 0, NULL, 0, OPT_NONE   ,0,0,0}
 #define OPT_BOOLEAN(...) { ARGPARSE_OPT_BOOLEAN, __VA_ARGS__ }
 #define OPT_BIT(...)     { ARGPARSE_OPT_BIT, __VA_ARGS__ }
-#define OPT_INTEGER(...) { ARGPARSE_OPT_INT, __VA_ARGS__ }
-#define OPT_INT(...)     { ARGPARSE_OPT_INT, __VA_ARGS__ }
+#define OPT_INT32(...)   { ARGPARSE_OPT_INT32, __VA_ARGS__ }
 #define OPT_UINT8(...)   { ARGPARSE_OPT_UINT8, __VA_ARGS__ }
 #define OPT_FLOAT(...)   { ARGPARSE_OPT_FLOAT, __VA_ARGS__ }
 #define OPT_STRING(...)  { ARGPARSE_OPT_STRING, __VA_ARGS__ }

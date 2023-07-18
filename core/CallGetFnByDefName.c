@@ -42,8 +42,8 @@ CallGetFnByDefName(const uint8_t *nameText
 
   STAILQ_FOREACH(Common_Definition, &SCDERoot.HeadCommon_Definitions, entries) {
 
-      if ( (Common_Definition->nameLen == nameTextLen)
-          && (!strncasecmp((const char*) Common_Definition->name,
+      if ( (Common_Definition->nname.len == nameTextLen)
+          && (!strncasecmp((const char*) Common_Definition->nname.p_char,
 		(const char*) nameText, nameTextLen)) ) {
 
               if (Common_Definition->module->provided->get_fn) {

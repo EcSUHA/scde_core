@@ -37,6 +37,9 @@
 #define Common_Definition_t    Entry_Common_Definition_t
 #define Entry_Definition_t     Entry_Common_Definition_t
 
+#define entry_common_definition_t Entry_Common_Definition_t
+#define entry_common_definition_s Entry_Common_Definition_s
+
 #define HeadCommon_Definitions head_definition
 
 //        alt            neu
@@ -86,7 +89,7 @@ typedef struct Provided_By_Module_s Provided_By_Module_t;
 typedef struct Entry_Command_s Entry_Command_t;
 
 // Entry_Common_Definition_t stores values (the common part) for operation of an definition
-typedef struct Entry_Common_Definition_s Entry_Common_Definition_t;
+typedef struct entry_common_definition_s entry_common_definition_t;
 
 // ?
 typedef struct Common_StageXCHG_s Common_StageXCHG_t;
@@ -101,6 +104,12 @@ typedef struct notify_s notify_t;
 // typedef for entry_notify_t - an STAILQ entry that stores one notify
 typedef struct entry_notify_s entry_notify_t;
 
+// typedef for entry_attr_name_t - stores the name of an attribute (attr_name)
+typedef struct entry_attr_name_s entry_attr_name_t;
+
+// typedef for  entry_attr_value_t - stores an assigned attribute-value
+typedef struct entry_attr_value_s entry_attr_value_t;
+
 // typedef for Changed_t - stores general infos to process the changes + includes the pending notifies LIST head
 typedef struct changed_s changed_t;
 
@@ -109,6 +118,17 @@ typedef struct Reading_s Reading_t;
 
 // typedef for Entry_Reading_t - an STAILQ entry that stores one reading
 typedef struct Entry_Reading_s Entry_Reading_t;
+
+// reading_type (type) stores handling information for this reading types data.
+typedef struct reading_type_s reading_type_t;
+
+
+// typedef for reading_t - stores the content of one reading
+typedef struct reading2_s reading2_t;
+
+// typedef for entry_reading_t - an STAILQ entry that stores one reading
+typedef struct entry_reading2_s entry_reading2_t;
+
 
 // -------------------------------------------------------------------------------------------------
 
@@ -284,8 +304,12 @@ typedef parsedKVInputArgs_t* (* ParseKVInputArgsFn_t) (int numImplementedKeys, c
  * typedefs of Function Callbacks
  * This are provided & made accessible for modules and commands - for operation and helpers
  */
+ 
+ // typedef for Add_Query_Encoded_Fn - adds zero terminated query at given request-head buffer write position, with extras
+typedef void (*Add_Query_Encoded_Fn_t) (char *p_query_buf, char *p_req_head_buf);
+ 
 // typedef for AnalyzeCommandFn - analyzes + processes one command row
-typedef struct headRetMsgMultiple_s (*AnalyzeCommandFn_t) (const uint8_t *args, const size_t argsLen);
+typedef struct head_string_s (*Analyze_Command_Fn_t) (const uint8_t *args, const size_t argsLen);
 
 // typedef for AnalyzeCommandChainFn - analyzes + processes an configuration file
 typedef struct headRetMsgMultiple_s (*AnalyzeCommandChainFn_t) (const uint8_t *args, const size_t argsLen);
@@ -295,6 +319,9 @@ typedef int (* CallGetFnByDefNameFn_t) (const uint8_t *nameText, const size_t na
 
 // typedef for CommandReloadModule - Initially loads or executes a reload of an Module of given type-name
 typedef Module_t* (*CommandReloadModuleFn_t)(const String_t type_name);
+
+// typedef for Create_Reading_Fn - creates an new reading in calling definition
+typedef struct reading2_s * (*Create_Reading_Fn_t) (entry_common_definition_t *p_entry_common_definition, char *p_name, char *p_initial_value_as_text, char *p_initial_custom_unit_text, char *p_r_provided_by_module, char *template_name);
 
 // typedef for Devspec2ArrayFn - returns all definitions that match the given devicespecification (devspec)
 //typedef struct xHeadMultipleStringSLTQ_s (*Devspec2ArrayFn_t) (const xString_t devspecString);
@@ -309,11 +336,11 @@ typedef string_t (*Get_Formated_Date_Time_Fn_t) (time_t time);
 // typedef for FmtTimeFn - returns formated text of Time from tist
 typedef strText_t (*FmtTimeFn_t) (time_t time);
 
-// typedef for Call Get All Readings Fn by Def-Name
-typedef struct headRetMsgMultiple_s (*GetAllReadingsFn_t) (Entry_Common_Definition_t *Common_Definition);
+// typedef for Get_All_Readings_Fn - returns all readings of the definition as setreading args-text
+typedef struct head_string_s (*Get_All_Readings_Fn_t) (Entry_Common_Definition_t *p_entry_common_definition);
 
-// typedef for Call Get Definition and Attributes setup lines Fn by Def-Name
-typedef struct headRetMsgMultiple_s (*GetDefAndAttrFn_t) (Entry_Common_Definition_t *Common_Definition);
+// typedef for Get_Def_And_Attr_Fn - returns an definition with attributes as define/attr text
+typedef struct head_string_s (*Get_Def_And_Attr_Fn_t) (Entry_Common_Definition_t *p_entry_common_definition);
 
 //
 //typedef Entry_Common_Definition_t * (*Get_Ptr_To_Definition_By_Name_Fn_t) (const size_t definitionNameLen, const uint8_t *definitionName);
@@ -360,10 +387,19 @@ typedef void (*MakeReadingNameFn_t) (const String_t nameString);
 typedef time_t (*Readings_Begin_Update_Fn_t) (Entry_Common_Definition_t *p_entry_common_definition);
 
 // typedef for Readings_Bulk_Update_Fn - call this for every reading (bulk-update)
-typedef int (*Readings_Bulk_Update_Fn_t) (Entry_Common_Definition_t *p_entry_common_definition, const String_t reading_name, const String_t reading_value, const bool changed, time_t timestamp);
+typedef int (*Readings_Bulk_Update_Fn_t) (Entry_Common_Definition_t *p_entry_common_definition, reading2_t *reading, const bool changed, time_t timestamp);
 
 // typedef for Readings_End_Update_Fn - call this to after bulk-update to process readings
 typedef int (*Readings_End_Update_Fn_t) (Entry_Common_Definition_t *Common_Definition, bool doTrigger);
+
+// reads number from sting to uint16_t at res
+typedef bool (*Str_To_Float_Fn_t) (const char *str, float *res);
+
+// reads number from sting to uint16_t at res
+typedef bool (*Str_To_Uint16_Fn_t) (const char *str, uint16_t *res);
+
+// reads number from sting to uint32_t at res
+typedef bool (*Str_To_Uint32_Fn_t) (const char *str, uint32_t *res);
 
 // typedef for TimeNowFn - returns current time stamp
 typedef time_t (*TimeNowFn_t) ();
@@ -374,8 +410,7 @@ typedef struct headRetMsgMultiple_s (*WriteStatefileFn_t) ();
 // ----------------
 
 // added Fn (Perl -> C)
-typedef String_t* (*Get_Attr_Val_By_Def_Name_And_Attr_Name_Fn_t) (const String_t* p_def_name, const String_t* p_attr_name);
-
+typedef char * (*Get_Attr_Val_By_Def_Name_And_Attr_Name_Fn_t) (const string_t *p_def_name, const char *p_attr_name);
 
 // Argument Parser - (helpers)
 /*
@@ -407,16 +442,22 @@ typedef String_t* (*Get_Attr_Val_By_Def_Name_And_Attr_Name_Fn_t) (const String_t
  * SCDEFn (SCDE Functions) typedef
  * Stores Function callbacks provided & made accessible for modules and commands - for operation and helpers
  */
-typedef struct SCDEFn_s {
-  AnalyzeCommandFn_t AnalyzeCommandFn;                      // analyzes + processes one command row
+typedef struct SCDEFn_s { //!! MUSTER: Create_Reading_Fn_t Create_Reading; !! -> Create_Reading(xx);
+  Add_Query_Encoded_Fn_t Add_Query_Encoded;                 // adds zero terminated encoded query
+  Analyze_Command_Fn_t analyze_command_fn;                  // analyzes + processes one command row
   AnalyzeCommandChainFn_t AnalyzeCommandChainFn;            // analyzes + processes an configuration file
   CallGetFnByDefNameFn_t CallGetFnByDefNameFn;              // original CallFn
   CommandReloadModuleFn_t CommandReloadModuleFn;            //
+  Create_Reading_Fn_t Create_Reading;                       // creates an new reading in calling definition
   Devspec2ArrayFn_t Devspec2ArrayFn;			            // returns all definitions that match devspec
   Do_Trigger_Fn_t Do_Trigger_Fn;                            //
   FmtTimeFn_t FmtTimeFn;                                    // returns formated text of Time from tist
-  GetAllReadingsFn_t GetAllReadingsFn;                      // returns all readings of an definition
-  GetDefAndAttrFn_t GetDefAndAttrFn;                        //
+
+  // Get_All_Readings_Fn_t wird NICHT extern benbötigt!?!?!
+  Get_All_Readings_Fn_t get_all_readings_fn;                // returns all readings of the definition as setreading args-text
+
+  Get_Attr_Val_By_Def_Name_And_Attr_Name_Fn_t get_attr_val_by_def_name_and_attr_name_fn;
+  Get_Def_And_Attr_Fn_t get_def_and_attr_fn;                // returns an definition with attributes as define/attr text
   Get_Ptr_To_Definition_By_Name_Fn_t get_ptr_to_definition_by_name_fn;  //
   Get_Definitions_That_Match_DefSpec_String_Fn_t Get_Definitions_That_Match_DefSpec_String_Fn;
   Get_Formated_Date_Time_Fn_t get_formated_date_time_fn;    // returns formated text of Date-Time from tist
@@ -434,7 +475,10 @@ typedef struct SCDEFn_s {
   Readings_Begin_Update_Fn_t readings_begin_update_fn;      // call this before / to begin updating readings
   Readings_Bulk_Update_Fn_t readings_bulk_update_fn;        // call this to add an reading to the running update
   Readings_End_Update_Fn_t readings_end_update_fn;          // call this to after updating, to process readings & notifies
-
+  Str_To_Float_Fn_t Str_To_Float;                           //
+  Str_To_Uint16_Fn_t Str_To_Uint16;                         //
+  Str_To_Uint32_Fn_t Str_To_Uint32;                         //
+  
   // buid with : Argument Parser helpers ?
   ArgParse_SplitArgsToAllocatedMemFn_t ArgParse_SplitArgsToAllocatedMemFn;
   ArgParse_SplitURLEncodedArgsToAllocatedMemFn_t ArgParse_SplitURLEncodedArgsToAllocatedMemFn;
@@ -446,8 +490,6 @@ typedef struct SCDEFn_s {
 
   TimeNowFn_t TimeNowFn;                                   // returns current system time (no TiSt)
   WriteStatefileFn_t WriteStatefileFn;                     // 
-// added Fn (Perl -> C)
-  Get_Attr_Val_By_Def_Name_And_Attr_Name_Fn_t Get_Attr_Val_By_Def_Name_And_Attr_Name_Fn;
 // not final
   ParseKVInputArgsFn_t ParseKVInputArgsFn;                 // parses Key=Value(@) input arguments into array
 } SCDEFn_t;
@@ -561,7 +603,9 @@ typedef int (*Ready_Fn_t)(Entry_Common_Definition_t *p_entry_common_definition);
 typedef strTextMultiple_t* (*Rename_Fn_t)(Entry_Common_Definition_t *p_entry_common_definition, uint8_t *newName, size_t newNameLen, uint8_t *oldName, size_t oldNameLen);
 
 // typedef for Set_Fn - called to send data to the definition (opposite of Get) - provided my module
-typedef strTextMultiple_t* (*Set_Fn_t)(Entry_Common_Definition_t *p_entry_common_definition, uint8_t *setArgs, size_t setArgsLen);
+typedef Entry_String_t * (*Set_Fn_t)(entry_common_definition_t *p_entry_common_definition, char **p_p_argv, int argc);
+//typedef strTextMultiple_t* (*Set_Fn_t)(Entry_Common_Definition_t *p_entry_common_definition, uint8_t *setArgs, size_t setArgsLen);
+
 
 // typedef for Shutdown_Fn - called to do activities before SCDE shuts down - provided my module
 typedef strTextMultiple_t* (*Shutdown_Fn_t)(Entry_Common_Definition_t *p_entry_common_definition);
@@ -598,6 +642,8 @@ struct Provided_By_Module_s {
     uint8_t typeName[32];
     size_t typeNameLen;
 
+  reading_type_t *p_reading_types;
+
   Add_Fn_t add_fn;		            //
   Attribute_Fn_t attribute_fn;	    // called in case of attribute changes, to check them
   Define_Fn_t define_fn;		    // called to create a new definition of this type
@@ -613,13 +659,13 @@ struct Provided_By_Module_s {
   Read_Fn_t read_fn;		        //                   , Reading / receiving from a Device
   Ready_Fn_t ready_fn;		        //                   , check for available data, if no FD
   Rename_Fn_t rename_fn;		    // renameDefinitionFn, called to inform the definition about its renameing
-  Set_Fn_t set_fn;		            // setDefinitionFn?  , set/activate this device
+  Set_Fn_t Set;		                // setDefinitionFn?  , set/activate this device
   Shutdown_Fn_t shutdown_fn;        //                   ,called before shutdown
   State_Fn_t state_fn;		        //                   ,set local info for this device, do not activate anything
   Sub_Fn_t sub_fn;		            //                   ,called when Attribute-Keys owned by this Module are deleted
   Undefine_Fn_t undefine_fn;	    //                   ,clean up (delete timer, close fd), called by delete and rereadcfg
   Write_Fn_t write_fn;		        //
-  void* custom_fn;		            // ... provided by this Module (non-standard Fn). For other Modules.
+  void *custom_fn;		            // ... provided by this Module (non-standard Fn). For other Modules.
   int sizeof_custom_definition;     //sizeOf..// Size of modul specific definition structure (Entry_Common_Definition_t + X)
 };
 
@@ -656,13 +702,15 @@ struct Entry_Module_s {
  * - instance of an loaded module. Values are initialized by the SCDE and finalized by the
  *   loaded module itself (defineFn).
  */
-struct Entry_Common_Definition_s {
-  STAILQ_ENTRY(Entry_Definition_s) entries;	    // link to next definition entry
+struct entry_common_definition_s {
+  STAILQ_ENTRY(entry_common_definition_s) entries;	    // link to next definition entry
 
-  LIST_HEAD (Head_Attr_Value_s,                 // constructs the head of an LIST, which holds 
-      Entry_Attr_Value_s) head_attr_value;      // multiple linked attribute values
+  LIST_HEAD (head_attr_value_s,                 // constructs the head of an LIST, which holds 
+      entry_attr_value_s) head_attr_values;     // multiple linked assigned attribute values
 
  //? uint32_t* link;						    // link to next struct
+
+//String_t name;                                // this definitions 'name'
 
   union 
   {
@@ -676,7 +724,9 @@ struct Entry_Common_Definition_s {
     size_t nameLen; 
     };
   };
-
+  
+  time_t timestamp;		                        // timestamp for name change / general
+  
   union 
   {
   struct // new
@@ -692,13 +742,22 @@ struct Entry_Common_Definition_s {
   string_t state_reading_value;                 // the STATE reading is obligatory for every definition !
   time_t state_reading_timestamp;               // SCDE has also a timestamp for STATE
 
-  string_t definition;                          // the arguments that created this definition 
- 
-  uint32_t nr;							        // An unique sequential number assigned to definition
-								                // to rebuild / save in the order of definition-creation
+  reading2_t *p_state;  //new!                  // the state reading
 
-  int fd;							            // File Descriptor, used by selectlist / readyfnlist 
-								                // (-1 = not assigned)
+
+  // new state
+  reading2_t *p_state_reading;      // direct access link to reading 'state', maintained by this module
+  string_t state;                   // the formated STATE reading (filled by Eval_State_Format_Fn)
+                                    // STATE is no reading! it is formatted 'state' readings value
+
+  string_t definition;              // the arguments that were attached to define command 
+                                    // used to rebuild setup with .cfg file 
+ 
+  uint32_t nr;						// an unique sequential number assigned to definition
+								    // to rebuild / save in the order of definition/creation
+
+  int fd;						    // file descriptor, used by selectlist / readyfnlist 
+								    // (-1 = not assigned)
 
   int Common_CtrlRegA; //common_control_register_a		// Common Control Reg A (enum Common_CtrlRegA from WEBIF.h)
 
@@ -706,12 +765,15 @@ struct Entry_Common_Definition_s {
 
 //  xSemaphoreHandle def_mux; //definition_mux 
 
-  changed_t *p_changed;                         // an helper to process the changed readings in regard
-                                                // to the notify creation, in use if NOT NULL
+  changed_t *p_changed;             // an helper struct, to process the changed readings in regard
+                                    // to the notify creation, in use if NOT NULL
 
-  STAILQ_HEAD (head_readings_s,                 // Constructs the head of an STAILQ,
-      entry_reading_s) head_readings;           // which holds multiple linked readings
-  
+  STAILQ_HEAD (head_readings_s,     // constructs the head of an STAILQ,
+    entry_reading_s) head_readings; // which holds multiple linked readings
+ 
+  STAILQ_HEAD (head_readings2_s,    // constructs the head of an STAILQ,
+    entry_reading2_s) head_readings2; // which holds multiple linked readings ** V2 **
+       
   // Pointer to ActiveResourcesDataA, set at init time.
   void* ActiveResourcesDataA; //active_resource_data_a
   // Pointer to ActiveResourcesDataB, set at init time.
@@ -859,39 +921,47 @@ STAILQ_HEAD(Head_Definition_Ptr_s, Entry_Definitions_Ptr_s);
 
 
 
-// Entry_Attr_Name_t holds the name of an assigned attribute (attr_name). (linked list from queue.h)
-typedef struct Entry_Attr_Name_s Entry_Attr_Name_t;
-
 /*
- * Entry_Attr_Name_s (struct)
- * - holds the name of an assigned attribute (attr_name). (linked list from queue.h)
+ * entry_attr_name_s (struct)
+ * - stores the name of an attribute (attr_name). (linked list from queue.h)
  */
-struct Entry_Attr_Name_s {
-  LIST_ENTRY(Entry_Attr_Name_s) entries;	// links to next list entries
-  String_t attr_name;					    // an assigned Attribute Name
+struct entry_attr_name_s {
+  LIST_ENTRY(entry_attr_name_s) entries;	// links to next list entries
+  char *p_attr_name;					    // the zero-terminated attribute name
 };
-
 
 // -------------------------------------------------------------------------------------------------
 
-
-// Entry_Attr_Value_t holds assigned attribute-values. (linked list from queue.h)
-typedef struct Entry_Attr_Value_s Entry_Attr_Value_t;
-
 /*
- * Entry_Attr_Value_s (struct)
- * - holds assigned attribute-values. (linked list from queue.h)
+ * entry_attr_value_s (struct)
+ * - stores an assigned attribute-value. (linked list from queue.h)
  */
-struct Entry_Attr_Value_s {
-  LIST_ENTRY(Entry_Attr_Value_s) entries;	// links to next list entries
-  Entry_Attr_Name_t* p_entry_attr_name;		// ptr to the attribute-name-entry the attribute is assigned to
-  String_t attr_value;				// the assigned value MAY BE NULL IF NO VALUE!
+struct entry_attr_value_s {
+  LIST_ENTRY(entry_attr_value_s) entries;	// links to next list entries
+  entry_attr_name_t *p_entry_attr_name;		// ptr to the attribute-name-entry the attribute is assigned to
+  char *p_attr_value;				        // the assigned value MAY BE NULL IF NO VALUE!
 };
 
 
 
 // -------------------------------------------------------------------------------------------------
 // ↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓ typedefs and structs for generating notifies ↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓
+
+
+
+/* 
+ * changed_s (struct)
+ * - stores general information to process changes -> e.g. the notify creation
+ * - stores the pending notifies LIST head
+ */
+struct changed_s {
+  // Constructs the head of an STAILQ, which holds multiple linked notifies
+  STAILQ_HEAD (head_notifies_s, entry_notify_s) head_notifies;
+
+  time_t update_timestamp;               	// timestamp of bulk update
+};
+
+// -------------------------------------------------------------------------------------------------
 
 /*
  * entry_definition_to_be_notified_s (struct)
@@ -910,9 +980,8 @@ struct entry_definition_to_be_notified_s {
  * - the name of the notify, more optional details as value and an timestamp
  */
 typedef struct notify_s {
-  time_t timestamp;		// assigned timestamp 
-  String_t name;		// notify-name text
-  String_t value;		// notify details as text
+//  time_t timestamp;		// assigned timestamp 
+  reading2_t *reading;   // link to the reading that forced the notify
 } notify_t;
 
 // -------------------------------------------------------------------------------------------------
@@ -927,26 +996,94 @@ struct entry_notify_s {
   notify_t notify;                        // the notify
 };
 
-// -------------------------------------------------------------------------------------------------
-
-/* 
- * changed_s (struct)
- * - stores general information to process the changes -> notify creation
- * - stores the pending notifies LIST head
- */
-struct changed_s {
-  // Constructs the head of an STAILQ, which holds multiple linked notifies
-  STAILQ_HEAD (head_notifies_s, entry_notify_s) head_notifies;
-
-  time_t update_timestamp;               	// timestamp of bulk update
-};
-
 
 
 // -------------------------------------------------------------------------------------------------
 // ↓↓↓↓↓↓↓↓↓↓↓↓↓↓ typedefs and structs for generating readings ↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓
 
 
+
+//--------------------------------------------------------------------------------------------------
+
+/*
+ * methods for reading type
+ */
+// typedef for Get_Raw_Reading_As_Text_Fn - to get raw readings as ASCII-text
+typedef struct String_s (* Get_Raw_Reading_As_Text_Fn_t) (reading2_t *p_reading);
+
+// typedef for Store_Raw_Reading_From_Text_Fn - to get raw readings as ASCII-text
+typedef bool (* Store_Raw_Reading_From_Text_Fn_t) (reading2_t *p_reading, char* p_value_as_text);
+
+/* 
+ * reading_type
+ * - stores general information about this reading type
+ * - stores handling methods information for this reading types data
+ */
+struct reading_type_s {
+  char *template_name;  //! NULL marks end of types-array!        // the reading type template name
+  char *unit;                                                     // reading types unit text
+  Provided_By_Module_t *p_provided_by_module;                     // reading type is provided by module ...
+  Get_Raw_Reading_As_Text_Fn_t p_get_raw_reading_as_text_fn;      // fn to convert reading to text
+  Store_Raw_Reading_From_Text_Fn_t p_Store_Raw_Reading_From_Text; // fn to convert text to reading
+};
+
+//--------------------------------------------------------------------------------------------------
+
+/*
+ * reading_s (struct) 
+ * - stores the raw data of an reading
+ * - the type to process it
+ */
+typedef struct reading2_s {
+  time_t timestamp;		                        // timestamp of laste change
+  string_t name;		                        // the name
+  string_t raw_data;		                    // the custom raw data
+  char *unit;                                   // the unit, options:
+                                                // 1. ptr is matching unit ptr in reading_type (no free!)
+                                                // 2. custom string in allocated mem (needs to be free'd!)
+                                                // 3. ptr to fixed 'no-unit' string (no-free)
+  reading_type_t *p_reading_type;	            // link to reading type information
+} reading2_t;
+
+// -------------------------------------------------------------------------------------------------
+
+/*
+ * entry_reading_s (struct) 
+ * - used as an STAILQ entry, is used to store one 'reading' in an STAILQ
+ * - used to store multiple readings in definitions STAILQ
+ */
+struct entry_reading2_s {
+  STAILQ_ENTRY(entry_reading2_s) entries;	    // link to next entry in SLTQ
+  reading2_t reading;                           // the reading
+};
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// ##### ALT
 
 /*
  * reading_s (struct) 
@@ -1030,24 +1167,28 @@ struct SCDERoot_s {
 //use vars qw($selectTimestamp);  # used to check last select exit timestamp
 //use vars qw($winService);       # the Windows Service object
 
-  // Constructs the head of an LIST, which holds multiple linked attribute names
-  LIST_HEAD (Head_Attr_Name_s, Entry_Attr_Name_s) head_attr_name;
+  // constructs the head of an LIST, which holds multiple linked available? attribute names
+  LIST_HEAD (head_attr_name_s,
+      entry_attr_name_s) head_attr_names;
 
   // Link to available commands
-  STAILQ_HEAD (stailhead4, Entry_Command_s) head_command;
+  STAILQ_HEAD (stailhead4,
+      Entry_Command_s) head_command;
 
 //use vars qw(%data);             # Hash for user data
 //use vars qw(%defaultattr);      # Default attributes, used by FHEM2FHEM
 
 // Link to Definitions (a.k.a. devices ...)
-  STAILQ_HEAD (stailhead2, Entry_Definition_s) head_definition;
+  STAILQ_HEAD (stailhead2,
+      Entry_Definition_s) head_definition;
 
 //use vars qw(%inform);           # Used by telnet_ActivateInform
 //use vars qw(%intAt);            # Internal at timer hash, global for benchmark
 //use vars qw(%logInform);        # Used by FHEMWEB/Event-Monitor
 
   // STAILQ with loaded Modules
-  STAILQ_HEAD (stailhead1, Entry_Module_s) head_module;
+  STAILQ_HEAD (stailhead1, 
+      Entry_Module_s) head_module;
 
   // Constructs the head of an LIST, which holds multiple linked definitions that should be notified
   LIST_HEAD(head_definitions_to_be_notified_s,

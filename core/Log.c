@@ -37,6 +37,24 @@ Log(const char *internal_fn
 		,const char *format
 		,...)
 {
+  char attrkey_verbose[] = "verbose";
+  string_t global_definition = {(uint8_t*) "global", 6};
+  		        
+  // attribute verbose assigned to 'global', to control global log-level?			        
+  char *custom_log_level =
+      Get_Attr_Val_By_Def_Name_And_Attr_Name_Fn(&global_definition, &attrkey_verbose);
+  
+  // else start with default log-level 5
+  int adjusted_log_level = 9;
+
+  // analyze custom log-level string (from verbose attribute value)
+  if (custom_log_level) adjusted_log_level = atoi(custom_log_level);
+
+  // according to log-level: do we need to log it?
+  if ( adjusted_log_level < log_level ) return;
+
+  // ok, create log 
+
   // for current time
   time_t nowTist;
 

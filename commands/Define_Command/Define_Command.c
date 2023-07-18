@@ -258,8 +258,8 @@ Define_Command_Fn(const String_t args)
 		  (char *)module_name.p_char);
 		
 	  // now execute the reloadmodule command
-	  struct headRetMsgMultiple_s head_ret_msg_from_fn =
-	    p_SCDEFn->AnalyzeCommandFn(reloadmodule_cmd.p_char, reloadmodule_cmd.len);
+	  struct head_string_s head_ret_msg_from_fn =
+	    p_SCDEFn->analyze_command_fn(reloadmodule_cmd.p_char, reloadmodule_cmd.len);
 
 	  // free build
 	  free(reloadmodule_cmd.p_char);
@@ -341,7 +341,7 @@ Define_Command_Fn(const String_t args)
   p_new_entry_common_definition->module = p_module;
 
   // init the list for 'attr_value's
-  LIST_INIT(&p_new_entry_common_definition->head_attr_value);
+  LIST_INIT(&p_new_entry_common_definition->head_attr_values);
 
   // store custom 'name' (NAME LENGTH IS > 0 !)
   p_new_entry_common_definition->nname.p_char = malloc(definition_name.len);
@@ -360,6 +360,9 @@ Define_Command_Fn(const String_t args)
 
   // init readings (stailq), now empty
   STAILQ_INIT(&p_new_entry_common_definition->head_readings);
+  
+  // init readings (stailq), now empty
+  STAILQ_INIT(&p_new_entry_common_definition->head_readings2);
 
   // set initial state '???'
   p_new_entry_common_definition->state_reading_value.len =

@@ -3,7 +3,8 @@ cmake_policy(VERSION 2.6)
 
 project(Global_Module)
 
-add_library(Global_Module "Global_Module.c")
+add_library(Global_Module "GLOBAL_Module.c"
+	                      "GLOBAL_readings.c")
 
 target_include_directories(Global_Module PRIVATE "include")
 

@@ -20,11 +20,11 @@
 
 #include "SCDE.h"
 
-#include "ArgParse.h"
+//#include "ArgParse.h"
 
 
 // flags die aus short/long opt Parse ins ins Detail weitergegeben werden
-#define OPT_UNSET 1		// flag -> ?
+#define OPT_UNSET 1		    // flag -> ?
 #define OPT_LONG  (1 << 1)	// flag -> long opt is processed
 
 
@@ -436,7 +436,7 @@ argparse_getvalue(struct argparse *self,
   // temp stage1 values
 //  bool stage1Bool;			    // ARGPARSE_OPT_BOOL:	
   const char *stage1_char = NULL;	// ARGPARSE_OPT_STRING:
-  int stage1_int;			        // ARGPARSE_OPT_INT:
+  int32_t stage1_int32;			    // ARGPARSE_OPT_INT32:
   uint8_t stage1_uint8;			    // ARGPARSE_OPT_UINT8:
   float stage1_float;			    // ARGPARSE_OPT_FLOAT:
 
@@ -508,14 +508,14 @@ argparse_getvalue(struct argparse *self,
       break;
 
     // ?
-    case ARGPARSE_OPT_INT:
+    case ARGPARSE_OPT_INT32:
 
       errno = 0;
 
       if (self->optvalue) {
 
-       stage1_int = strtol(self->optvalue, (char **)&s, 0);
-       stage1_value = (void*) &stage1_int;
+       stage1_int32 = strtol(self->optvalue, (char **)&s, 0);
+       stage1_value = (void*) &stage1_int32;
 
 //      *(int *)opt->value = strtol(self->optvalue, (char **)&s, 0);
 
@@ -524,8 +524,8 @@ argparse_getvalue(struct argparse *self,
       } else if (self->argc > 1) {
 
         self->argc--;
-        stage1_int =  strtol(*++self->argv, (char **)&s, 0);
-        stage1_value = (void*) &stage1_int;
+        stage1_int32 =  strtol(*++self->argv, (char **)&s, 0);
+        stage1_value = (void*) &stage1_int32;
 
 //      *(int *)opt->value = strtol(*++self->argv, (char **)&s, 0);
 
@@ -700,9 +700,9 @@ skipped:
         break;
 
       // keep stage1 integer
-      case ARGPARSE_OPT_INT:
+      case ARGPARSE_OPT_INT32:
 
-        *(int *)opt->value = stage1_int;
+        *(int32_t *)opt->value = stage1_int32;
 
         break;
         
@@ -740,7 +740,7 @@ argparse_options_check(const struct argparse_option *options)
         case ARGPARSE_OPT_END:
         case ARGPARSE_OPT_BOOLEAN:
         case ARGPARSE_OPT_BIT:
-        case ARGPARSE_OPT_INT:
+        case ARGPARSE_OPT_INT32:
         case ARGPARSE_OPT_UINT8:
         case ARGPARSE_OPT_FLOAT:
         case ARGPARSE_OPT_STRING:
@@ -993,8 +993,8 @@ Options and non-option arguments can clearly be separated using the -- option.
  * -------------------------------------------------------------------------------------------------
  */
 Entry_String_t *
-ArgParse_Init(struct argparse *self, struct argparse_option *options,
-              const char *const *usages, int flags, const char *description,
+ArgParse_Init(struct argparse *self, struct argparse_option *options, const char *const *usages,
+    int flags, const char *description,
                   const char *epilog)
 {
   // all members ZERO
@@ -1432,9 +1432,9 @@ printf("entering usage...\n");
       len += strlen((options)->long_name) + 2;
     }
 
-    if (options->type == ARGPARSE_OPT_INT) {
+    if (options->type == ARGPARSE_OPT_INT32) {
 
-      len += strlen("=<int>");
+      len += strlen("=<int32>");
     }
     
     if (options->type == ARGPARSE_OPT_UINT8) {
@@ -1492,14 +1492,6 @@ printf("entering usage...\n");
 
 
 
-
-
-
-
-
-
-
-
 // need extra count
     pos = snprintf(p_strBuffer + strWriteOffset
             ,strBufferLen
@@ -1528,11 +1520,11 @@ printf("entering usage...\n");
             , options->long_name);
     }
 
-    if (options->type == ARGPARSE_OPT_INT) {
+    if (options->type == ARGPARSE_OPT_INT32) {
 
       pos += snprintf(p_strBuffer + strWriteOffset + pos
             ,strBufferLen
-            ,"=<int>");
+            ,"=<int32>");
 
     } else if (options->type == ARGPARSE_OPT_UINT8) {
 
@@ -1627,19 +1619,16 @@ printf("entering usage...\n");
  * -------------------------------------------------------------------------------------------------
  */
 int
-argparse_help_cb(struct argparse *self
-                ,const struct argparse_option *option
-                ,int flags
-                ,void *stage1_value)
+argparse_help_cb(struct argparse *self, const struct argparse_option *option,
+    int flags, void *stage1_value)
 {
   (void)option;
 
   ArgParse_Usage(self);
 
-printf("HELP-callback\n");
+  printf("HELP-callback\n");
 
- return -3; // because ArgParse_Usage prepares an ret_msg
-//    exit(0);
+  return -3; // because ArgParse_Usage prepares an ret_msg
 }
 
 

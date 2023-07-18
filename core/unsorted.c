@@ -48,6 +48,7 @@ attribute_t	SetAttrByDefTextAttrTextValText(strText_t defName, strText_t attrNam
 void //ICACHE_FLASH_ATTR
 InitA()
 {
+
 printf("Enter0");
 // Zeile 570 , Initialisierung ...
 
@@ -58,23 +59,48 @@ printf("Enter0");
 
   // get attribute configfile value (global->configfile)
   String_t attrCfgFNDefName = {(uint8_t*) "global", 6};
-  String_t attrCfgFNAttrName = {(uint8_t*) "configfile", 10};
-  String_t* attrCfgFNValueName  =
-	Get_Attr_Val_By_Def_Name_And_Attr_Name(&attrCfgFNDefName, &attrCfgFNAttrName);
+//  String_t attrCfgFNAttrName = {(uint8_t*) "configfile", 10};
+  char attrCfgFNAttrName[] = "configfile";
+  char *attrCfgFNValueName  =
+	Get_Attr_Val_By_Def_Name_And_Attr_Name_Fn(&attrCfgFNDefName, &attrCfgFNAttrName);
 
   if (!attrCfgFNValueName) printf("got no value for configfile");
 
 
 // -------------------------------------------------------------------------------------------------
 	printf("Enter2");
+	
+	printf("Enter0");
+printf("Enter0");
+printf("Enter0");
+printf("Enter0");
+printf("Enter0");
+printf("Enter0");
+printf("Enter0");
+printf("Enter0");
+printf("Enter0");
+printf("Enter0");
+printf("Enter0");
+printf("Enter0");
+printf("Enter0");
+printf("Enter0");
+printf("Enter0");
+printf("Enter0");
+printf("Enter0");
+printf("Enter0");
+printf("Enter0");
+printf("Enter0");
+printf("Enter0");
+printf("Enter0");
+	
+	
   // create the args to execute the 'include configfile' command
   String_t incCFIncludeCommandArgs;
 
   incCFIncludeCommandArgs.len =
 	asprintf((char**) &incCFIncludeCommandArgs.p_char
-		,"include %.*s"
-		,(int) attrCfgFNValueName->len
-		,(char*) attrCfgFNValueName->p_char);
+		,"include %s"
+		,attrCfgFNValueName);
 		
 	printf("Enter3");
 	
@@ -164,9 +190,9 @@ printf("Enter0");
 
 	// get attribute 'statefile' value (from global->statefile)
   String_t attrStateFNDefName = {(uint8_t*) "global", 6};
-  String_t attrStateFNAttrName = {(uint8_t*) "statefile", 9};
-  String_t *attrStateFNValueName =
-		Get_Attr_Val_By_Def_Name_And_Attr_Name(&attrStateFNDefName, &attrStateFNAttrName);
+  char attrStateFNAttrName[] = "statefile";
+  char *attrStateFNValueName =
+		Get_Attr_Val_By_Def_Name_And_Attr_Name_Fn(&attrStateFNDefName, &attrStateFNAttrName);
 
 // -------------------------------------------------------------------------------------------------
 
@@ -177,7 +203,7 @@ printf("Enter0");
   if (attrStateFNValueName) {
 
 		// +value found ? 
-		if (attrStateFNValueName->len) {
+//		if (attrStateFNValueName->len) {
 
 			// build strText_t for cmd args
 			incSFIncludeCommandArgs =
@@ -186,12 +212,11 @@ printf("Enter0");
 			// attribute "statefile" complete, use it to build args
 			incSFIncludeCommandArgs->len =
 				asprintf((char**) &incSFIncludeCommandArgs->p_char
-					,"include %.*s"
-					,(int) attrStateFNValueName->len
-					,(char*) attrStateFNValueName->p_char);
+					,"include %s"
+                    ,attrStateFNValueName);
 
 			//free(attrStateFNValueName->strText);
-		}
+//		}
 
  // free(attrStateFNValueName);
 	}

@@ -43,8 +43,8 @@ Get_Definitions_That_Match_DefSpec_String(const String_t def_spec)
 
   STAILQ_FOREACH(p_definition, &SCDERoot.HeadCommon_Definitions, entries) {
 
-	if ( (p_definition->nameLen == def_spec.len) &&
-             (!strncasecmp((const char*) p_definition->name,
+	if ( (p_definition->nname.len == def_spec.len) &&
+             (!strncasecmp((const char*) p_definition->nname.p_char,
 			(const char*) def_spec.p_char, def_spec.len)) ) {
 
 		// alloc an definitionMultipleString queue element

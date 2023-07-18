@@ -65,7 +65,7 @@
 
 
 
-/*
+/* sucht das state reading in den definitions-readings und packt es formatiert in den/das STATE!
  * --------------------------------------------------------------------------------------------------
  *  FName: Eval_State_Format_Fn
  *  Desc: Evaluates the state-reading embedded in each definition
@@ -76,6 +76,9 @@
 void
 Eval_State_Format_Fn(Entry_Common_Definition_t *p_entry_common_definition)
 {
+  // uses entry_reading2_t *p_state in definition, for direct access (should be maintained by modules!)
+
+/*
   // find state readings entry
   Entry_Reading_t *p_entry_state_reading;
   STAILQ_FOREACH(p_entry_state_reading, &p_entry_common_definition->head_readings, entries) {
@@ -85,11 +88,12 @@ Eval_State_Format_Fn(Entry_Common_Definition_t *p_entry_common_definition)
 			&& (!strncmp((const char*) p_entry_state_reading->reading.name.p_char,
 				(const char*) "state", 5)) ) break;
   }
+ */
   
 // -------------------------------------------------------------------------------------------------
 
   // found state readings entry + flag SKIP_STATE_FORMAT_EVAL
-  if ( (p_entry_state_reading) &&
+  if ( (p_entry_common_definition->p_state_reading) &&
       (p_entry_common_definition->Common_CtrlRegA & (F_SKIP_STATE_FORMAT_EVAL)) ) {
       
 //    return;    
@@ -98,38 +102,38 @@ Eval_State_Format_Fn(Entry_Common_Definition_t *p_entry_common_definition)
 // -------------------------------------------------------------------------------------------------
 
 // temp replace state raw ... 
-  if (p_entry_state_reading) {
+  if (p_entry_common_definition->p_state_reading) {
 
-           // upd. existing reading, 1. free existing value
-	      if (p_entry_common_definition->state_reading_value.p_char) 
-				free(p_entry_common_definition->state_reading_value.p_char);
+      // upd. existing reading, 1. free existing value
+      if (p_entry_common_definition->state.p_char) 
+	      free(p_entry_common_definition->state.p_char);
 
-          // upd. existing reading, 2. fill reading with new value
-          p_entry_common_definition->state_reading_value.len =
-	          asprintf((char **) &p_entry_common_definition->state_reading_value.p_char
-	          ,"%.*s"
-	          ,p_entry_state_reading->reading.value.len
-	          ,p_entry_state_reading->reading.value.p_char);
+      string_t value_as_text = 
+ //         p_entry_common_definition->p_state_reading->reading.p_entry_reading_type->p_get_raw_reading_as_text_fn(&p_entry_common_definition->p_state_reading->reading);				
+          p_entry_common_definition->p_state_reading->p_reading_type->p_get_raw_reading_as_text_fn(p_entry_common_definition->p_state_reading);				
 
-		  // set time (timestamp)
-		  p_entry_common_definition->state_reading_timestamp =
-		     p_entry_state_reading->reading.time;
+      // upd. existing reading, 2. fill reading with new value
+      p_entry_common_definition->state.len =
+	      asprintf((char **) &p_entry_common_definition->state.p_char
+	        ,"%.*s"
+	        ,value_as_text.len
+            ,value_as_text.p_char);
+	        
+	  free(value_as_text.p_char);       
   }
  
 // -------------------------------------------------------------------------------------------------
  
 // temp debug out ... 
-  if (p_entry_state_reading) {
+  if (p_entry_common_definition->state.p_char) {
   
-      string_t td_string = Get_Formated_Date_Time_Fn(p_entry_common_definition->state_reading_timestamp);
-	  printf("updated:  %.*s | STATE = %.*s\n"
-	      ,td_string.len
-		  ,td_string.p_char
-		  ,p_entry_state_reading->reading.value.len
-		  ,p_entry_state_reading->reading.value.p_char);	
-	  free(td_string.p_char);
-  } else printf("STATE NOT fnd!\n");
- 
+	  printf("evaluated STATE = %.*s\n"
+		  ,p_entry_common_definition->state.len
+		  ,p_entry_common_definition->state.p_char);	
+  }
+  
+  else printf("STATE READING NOT MAINTAINED! CAN NOT EVAL\n");
+
  
 // -------------------------------------------------------------------------------------------------
 

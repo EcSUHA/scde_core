@@ -249,9 +249,9 @@ Save_CommandFn (const uint8_t *argsText
 
 		// get attribute "global->configfile" value
 		String_t attrConfigFNDefName = {(uint8_t*) "global", 6};
-		String_t attrConfigFNAttrName = {(uint8_t*) "configfile", 10};
-		String_t *attrConfigFNValueName =
-			SCDEFn->Get_Attr_Val_By_Def_Name_And_Attr_Name_Fn(&attrConfigFNDefName, &attrConfigFNAttrName);
+		char attrConfigFNAttrName[] = "configfile";
+		char *attrConfigFNValueName =
+			SCDEFn->get_attr_val_by_def_name_and_attr_name_fn(&attrConfigFNDefName, &attrConfigFNAttrName);
 
 		// veryfy length > 0, NameTextLen still 0 -> get it from Attribute
 		if (fileNameTextLen == 0) {
@@ -260,16 +260,16 @@ Save_CommandFn (const uint8_t *argsText
 			if (attrConfigFNValueName) {
 
 
-				// and its not an empty Value (has >0 chars) ?
-				if (attrConfigFNValueName->len) {
+		//		// and its not an empty Value (has >0 chars) ?
+		//		if (attrConfigFNValueName->len) {
 
 					// case: configfile attribute set, use it
 					fileNameTextLen =
-						attrConfigFNValueName->len;
+						strlen(attrConfigFNValueName);
 					fileNameText =
-						(uint8_t *) attrConfigFNValueName->p_char;
+						(uint8_t *) attrConfigFNValueName;
 					
-				}
+		//		}
 			}
 		}
 
@@ -315,7 +315,9 @@ Save_CommandFn (const uint8_t *argsText
 			,fileNameText);
 
 	// open configfile
-	FILE* cFH = fopen(configFile, "w");
+//	FILE* cFH = fopen(configFile, "w");
+    FILE* cFH = fopen("/spiffs/maker.cfg", "w");
+	
 	if (cFH == NULL) {
 
 		// alloc mem for retMsg
@@ -352,23 +354,23 @@ Save_CommandFn (const uint8_t *argsText
 
 
 
-/*
-	// stores the time
-	struct tm timeinfo;
+/* cfg gets no date !
+  // stores the time
+  struct tm timeinfo;
 
- time_t timeNow;
+  time_t timeNow;
 
- // assign time stamp
+  // assign time stamp
   time(&timeNow);
 
   // get time
-	localtime_r(&timeNow, &timeinfo);
+  localtime_r(&timeNow, &timeinfo);
 
   // to fill with: "Sat Aug 19 14:16:59 2017"
-	char strftime_buf[64];
+  char strftime_buf[64];
 
- // get strftime-text into strftime_buf 
-	strftime(strftime_buf, sizeof(strftime_buf), "%c", &timeinfo);
+  // get strftime-text into strftime_buf 
+  strftime(strftime_buf, sizeof(strftime_buf), "%c", &timeinfo);
 
   // start statefile with date:-> #Sat Aug 19 14:16:59 2017
   fprintf(cFH,"#%s\r\n", strftime_buf);
@@ -383,8 +385,6 @@ Save_CommandFn (const uint8_t *argsText
   for (uint32_t i = 0 ; i < SCDERoot->device_count ; i++) {
 
 
-
-
 	// its a comment, add it
 //#if(!defined($d)) {
 //#     print $fh $h->{TEXT},"\n";
@@ -395,61 +395,59 @@ Save_CommandFn (const uint8_t *argsText
 
 
 
-		Common_Definition_t *Common_Definition;
+      Entry_Common_Definition_t *p_entry_common_definition;
 
-		// loop through definitions to find matching unique nr
-		STAILQ_FOREACH(Common_Definition, &SCDERoot->HeadCommon_Definitions, entries) {
+          // loop through definitions to find matching unique nr
+		  STAILQ_FOREACH(p_entry_common_definition, &SCDERoot->head_definition, entries) {
 
-
-			// if this Definition matches current unique number -> process it
-			if (
-				(Common_Definition->nr == i) &&												// the current unique number
-				(!(Common_Definition->defCtrlRegA & F_TEMPORARY)) &&	// and NO temporary definition
-				(!(Common_Definition->defCtrlRegA & F_VOLATILE))			// and NO volatile definition
+			  // if this definition matches current unique number -> process it
+			  if (
+				  (p_entry_common_definition->nr == i) &&						// the current unique number
+				  (!(p_entry_common_definition->defCtrlRegA & F_TEMPORARY)) &&	// and NO temporary definition
+				  (!(p_entry_common_definition->defCtrlRegA & F_VOLATILE))		// and NO volatile definition
 				 ) {
+
+			      // get .CFG lines for definition and attribute setup
+				  struct head_string_s head_def_and_attr_text =
+					  SCDEFn->get_def_and_attr_fn(p_entry_common_definition);
+
+				  // if RetMsgMultiple queue not empty -> got lines to add to .CFG
+				  if (!STAILQ_EMPTY(&head_def_and_attr_text)) {
+
+				      // get the queue entries from retMsgMultiple till empty
+					  while (!STAILQ_EMPTY(&head_def_and_attr_text)) {
+
+					      // get a retMsg element from queue
+						  strTextMultiple_t *retMsg =
+							  STAILQ_FIRST(&head_def_and_attr_text);
+
+
+						  // store def and attr lines to file
+						  fprintf(cFH,"%.*s"
+						      ,retMsg->strTextLen
+							  ,retMsg->strText);
 /*
-				// store Definition and Attribute
-				printf("calling GetDefAndAttr for:%.*s\n"
-					,Common_Definition->nameLen
-					,Common_Definition->name);
+						  printf("debg: %.*s"
+							  ,retMsg->strTextLen
+							  ,retMsg->strText);
 */
-				// get .CFG lines for definition and attribute setup
-				struct headRetMsgMultiple_s headRetMsgMultipleFromFn =
-					SCDEFn->GetDefAndAttrFn(Common_Definition);
+						  // done, remove this entry
+						  STAILQ_REMOVE_HEAD(&headRetMsgMultipleFromFn, entries);
 
-				// if RetMsgMultiple queue not empty -> got lines to add to .CFG
-				if (!STAILQ_EMPTY(&headRetMsgMultipleFromFn)) {
-
-					// get the queue entries from retMsgMultiple till empty
-					while (!STAILQ_EMPTY(&headRetMsgMultipleFromFn)) {
-
-						// get a retMsg element from queue
-						strTextMultiple_t *retMsg =
-							STAILQ_FIRST(&headRetMsgMultipleFromFn);
-/*
-						printf("store def or attr line to File: %.*s\n"
-							,retMsg->strTextLen
-							,retMsg->strText);
-*/
-						// store def or attr line to file
-						fprintf(cFH,"%.*s\n"
-							,retMsg->strTextLen
-							,retMsg->strText);
-
-						// done, remove this entry
-						STAILQ_REMOVE_HEAD(&headRetMsgMultipleFromFn, entries);
-
-						free(retMsg->strText);
-						free(retMsg);
-					}
-				}
-			}
-		}
+						  free(retMsg->strText);
+						  free(retMsg);
+			          }
+		          }
+	          }
+          }  
   }
 
-	// close configfile
-	fclose(cFH);
+  // close configfile
+  fclose(cFH);
 
+
+  // debug-> print file content
+  printf("\ndbg content/spiffs/maker.cfg:\n");
 	// show filecontent on debug term
 	int c;
 	FILE *file;
@@ -459,29 +457,36 @@ Save_CommandFn (const uint8_t *argsText
         putchar(c);
     fclose(file);
 	}
+  printf("dbg end\n");
+  // debug end
 
-	// finnish cmd save with confirmation string
 
-		// alloc mem for an retMsg
-		strTextMultiple_t *retMsg =
-			malloc(sizeof(strTextMultiple_t));
+  // finnish cmd save with confirmation string
 
-		// response with error text
-		retMsg->strTextLen = asprintf(&retMsg->strText
-			,"Wrote configuration to %.*s!\r\n"
-			,fileNameTextLen
-			,fileNameText);
+  // alloc mem for an retMsg
+  strTextMultiple_t *retMsg =
+      malloc(sizeof(strTextMultiple_t));
 
-		// insert retMsg in queue
-		STAILQ_INSERT_TAIL(&headRetMsgMultiple, retMsg, entries);
+  // response with error text
+  retMsg->strTextLen = asprintf(&retMsg->strText
+      ,"Wrote configuration to %.*s!\r\n"
+      ,fileNameTextLen
+      ,fileNameText);
 
-		// free attribute-data from Get_attrVal_by_defName_and_attrNameFn
+  // insert retMsg in queue
+  STAILQ_INSERT_TAIL(&headRetMsgMultiple, retMsg, entries);
+
+  // return STAILQ head, stores multiple retMsg, if STAILQ_EMPTY -> no retMsg-entries
+  return headRetMsgMultiple;
+}
+
+
+
+
+  // free attribute-data from Get_attrVal_by_defName_and_attrNameFn
 //		if (attrConfigFNValueName->strText) free(attrConfigFNValueName->strText);	 
 //		if (attrConfigFNValueName) free (attrConfigFNValueName);
 
-	// return STAILQ head, stores multiple retMsg, if STAILQ_EMPTY -> no retMsg-entries
-	return headRetMsgMultiple;
-}
 
 /*
 

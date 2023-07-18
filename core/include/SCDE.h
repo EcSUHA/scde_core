@@ -41,7 +41,10 @@ void InitA();
 
 
 // adds an event as entry_event_t to the changed-readings List
-void Add_Event_Fn(Entry_Common_Definition_t *p_entry_common_definition, const string_t notify_name, const string_t notify_value, const time_t timestamp);
+void Add_Event_Fn(Entry_Common_Definition_t *p_entry_common_definition, reading2_t *reading);
+
+// adds zero terminated query at given request-head buffer write position, with extras
+void Add_Query_Encoded(char *p_query_buf, char *p_req_head_buf);
 
 // analyzes + processes one command row
 //struct headRetMsgMultiple_s AnalyzeCommand(const uint8_t *args, const size_t argsLen);
@@ -60,6 +63,8 @@ Module_t* CommandReloadModule(const String_t type_name);
 // creates the notify list (should be empty when calling!)
 void Create_Notify_List_Fn();
 
+// creates an new reading in calling definition
+reading2_t * Create_Reading_Fn(entry_common_definition_t *p_entry_common_definition, char *p_name, char *p_initial_value_as_text, char *p_initial_custom_unit_text, char *p_r_provided_by_module, char *template_name);
 
 // returns all definitions that match 'def-spec'
 struct Head_String_s Devspec2Array(const String_t devspecString);
@@ -69,7 +74,7 @@ struct Head_String_s Devspec2Array(const String_t devspecString);
 void Delete_Notify_List_Fn();
 
 //
-Entry_String_t* Do_Trigger_Fn(Entry_Common_Definition_t *p_entry_common_definition, entry_notify_t *p_changed_state);
+Entry_String_t* Do_Trigger_Fn(Entry_Common_Definition_t *p_entry_common_definition, char *p_changed_state);
 
 // evaluates the state-reading embedded in each definition
 void Eval_State_Format_Fn(Entry_Common_Definition_t *p_entry_common_definition);
@@ -77,11 +82,14 @@ void Eval_State_Format_Fn(Entry_Common_Definition_t *p_entry_common_definition);
 // returns formated text of Time from tist
 strText_t FmtTime(time_t tiSt);
 
-// returns ALL Readings of the Definition
-struct headRetMsgMultiple_s GetAllReadings (Common_Definition_t *Common_Definition);
+// returns text of attr val
+char * Get_Attr_Val_By_Def_Name_And_Attr_Name_Fn(const string_t *p_def_name, const char *p_attr_name);
+
+// returns all readings of the definition as setreading args-text
+struct head_string_s Get_All_Readings_Fn(Entry_Common_Definition_t *p_entry_common_definition);
 
 // returns an SLTQ-head, containig the definition line and the attribute lines as entrys
-struct Head_String_s Get_Def_And_Attr (Entry_Definition_t* p_entry_definition);
+struct head_string_s Get_Def_And_Attr_Fn(Entry_Definition_t* p_entry_definition);
 
 //
 Common_Definition_t * Get_Ptr_To_Definition_By_Name_Fn(const String_t definition_name);
@@ -129,7 +137,7 @@ void MakeReadingName(const String_t nameString);
 time_t Readings_Begin_Update_Fn(Entry_Common_Definition_t *p_entry_common_definition);
 
 // call this to add an Reading to the running update of Readings
-int Readings_Bulk_Update_Fn(Entry_Common_Definition_t *p_entry_common_definition, const String_t reading_name, const String_t reading_value, const bool changed, time_t timestamp);
+int Readings_Bulk_Update_Fn(Entry_Common_Definition_t *p_entry_common_definition, reading2_t *reading, const bool changed, time_t timestamp);
     
 // call this to after bulk-update to process readings
 int Readings_End_Update_Fn(Common_Definition_t *Common_Definition, bool doTrigger);
@@ -139,6 +147,15 @@ void Remove_From_Notify_List_Fn(Entry_Definition_t *p_entry_common_definition);
 
 // Sets an reading with value and update time in given definition
 void Set_Readings_Value_Fn(Entry_Common_Definition_t *p_entry_common_definition, const String_t reading_name, const String_t reading_value, const time_t timestamp);
+
+// reads number from sting to float_t at res
+bool Str_To_Float(const char *str, float *res);
+
+// reads number from sting to uint16_t at res
+bool Str_To_Uint16(const char *str, uint16_t *res);
+
+// reads number from sting to uint32_t at res
+bool Str_To_Uint32(const char *str, uint32_t *res);
 
 // The argument parser
   // Argument Parser - Split Arguments To Allocated Mememory Fn
@@ -211,9 +228,6 @@ bool                        DeleteAttribute(char* Definition, char* AttributeNam
 
 // Initializes the global device
 void doGlobalDef(const uint8_t *cfgFileName, const size_t cfgFileNameLen);
-
-//
-String_t* Get_Attr_Val_By_Def_Name_And_Attr_Name(const String_t* p_def_name, const String_t* p_attr_name);
 
 
 
